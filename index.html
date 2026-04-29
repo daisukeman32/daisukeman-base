@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ダイスケマンBASE — 秘密基地 | D@ISM</title>
+  <meta name="description" content="D@ISM代表・ダイスケマンの秘密基地。ツール開発、AI動画、コンサル、ナレッジ。43歳脱サラおじさんの全てがここに。">
+  <meta property="og:title" content="ダイスケマンBASE — 秘密基地">
+  <meta property="og:description" content="D@ISM代表・ダイスケマンの秘密基地。ツール開発、AI動画、コンサル、ナレッジ。">
+  <meta property="og:type" content="website">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+JP:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --font: 'Inter', 'Noto Sans JP', -apple-system, sans-serif;
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+      --accent: #c97b5b;
+      --accent-light: #e09070;
+      --max-w: 1200px;
+      --pad: 48px;
+    }
+
+    [data-theme="dark"] {
+      --bg: #060606;
+      --bg-alt: #0c0c0c;
+      --bg-card: #0f0f0f;
+      --bg-card-hover: #161616;
+      --bg-nav: rgba(6,6,6,0.92);
+      --border: #181818;
+      --border-hover: #2a2a2a;
+      --text: #eee;
+      --text-sub: #9a9a9a;
+      --text-muted: #6a6a6a;
+      --accent-glow: rgba(201,123,91,0.10);
+      --accent-glow-strong: rgba(201,123,91,0.20);
+      --cta-text: #060606;
+    }
+
+    [data-theme="light"] {
+      --bg: #f4f1ed;
+      --bg-alt: #ebe7e2;
+      --bg-card: #fff;
+      --bg-card-hover: #faf7f4;
+      --bg-nav: rgba(244,241,237,0.94);
+      --border: #ddd6ce;
+      --border-hover: #c5bdb4;
+      --text: #1a1a1a;
+      --text-sub: #666;
+      --text-muted: #aaa;
+      --accent-glow: rgba(201,123,91,0.07);
+      --accent-glow-strong: rgba(201,123,91,0.14);
+      --cta-text: #fff;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      transition: background 0.6s var(--ease), color 0.6s var(--ease);
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* ============================================
+       SCROLL ANIMATIONS
+       ============================================ */
+    /* Theme image switching */
+    .img-day { display: none; }
+    .img-night { display: inline-block; }
+    [data-theme="light"] .img-day { display: inline-block; }
+    [data-theme="light"] .img-night { display: none; }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(40px);
+      transition: opacity 0.8s var(--ease), transform 0.8s var(--ease);
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.2s; }
+    .reveal-delay-3 { transition-delay: 0.3s; }
+    .reveal-delay-4 { transition-delay: 0.4s; }
+
+    /* ============================================
+       NAV
+       ============================================ */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: var(--bg-nav);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      transition: background 0.6s var(--ease), border-color 0.6s var(--ease);
+    }
+
+    .nav-inner {
+      max-width: var(--max-w); margin: 0 auto;
+      padding: 0 var(--pad); height: 64px;
+      display: flex; align-items: center;
+    }
+
+    .nav-brand {
+      display: flex; align-items: center; gap: 14px;
+      margin-right: auto;
+    }
+
+    .nav-brand img { width: 36px; height: auto; }
+
+    .nav-brand-name {
+      font-size: 1.05rem; font-weight: 700;
+      letter-spacing: 0.06em; color: var(--text);
+      transition: color 0.6s var(--ease);
+    }
+
+    .nav-brand-name ruby { ruby-position: over; line-height: 2; }
+
+    .nav-brand-name rt {
+      font-size: 0.5em; font-weight: 400;
+      color: var(--accent); letter-spacing: 0.08em;
+      padding-bottom: 4px;
+    }
+
+    .nav-links {
+      display: flex; gap: 36px; list-style: none;
+      margin: 0 40px;
+    }
+
+    .nav-links a {
+      font-size: 0.7rem; font-weight: 500;
+      letter-spacing: 0.12em; color: var(--text-sub);
+      text-transform: uppercase; transition: color 0.25s;
+      position: relative;
+    }
+
+    .nav-links a::after {
+      content: ''; position: absolute;
+      bottom: -2px; left: 0; width: 0; height: 1px;
+      background: var(--accent); transition: width 0.3s;
+    }
+
+    .nav-links a:hover { color: var(--text); }
+    .nav-links a:hover::after { width: 100%; }
+
+    .nav-right {
+      display: flex; align-items: center; gap: 24px;
+      margin-left: auto;
+    }
+
+    /* Toggle Switch */
+    .theme-switch {
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .theme-switch-label {
+      font-size: 0.55rem; font-weight: 500;
+      letter-spacing: 0.1em; color: var(--text-muted);
+      transition: color 0.3s;
+    }
+
+    .theme-switch-track {
+      width: 44px; height: 24px;
+      border-radius: 12px;
+      background: var(--border);
+      border: 1px solid var(--border-hover);
+      cursor: pointer;
+      position: relative;
+      transition: all 0.3s;
+    }
+
+    .theme-switch-track:hover { border-color: var(--accent); }
+
+    .theme-switch-thumb {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: var(--accent);
+      position: absolute;
+      top: 2px; left: 2px;
+      transition: transform 0.3s var(--ease);
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .theme-switch-thumb svg {
+      width: 10px; height: 10px;
+      stroke: #fff; fill: none;
+      stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round;
+    }
+
+    [data-theme="light"] .theme-switch-thumb {
+      transform: translateX(20px);
+    }
+
+    .theme-switch-thumb .icon-sun { display: none; }
+    .theme-switch-thumb .icon-moon { display: block; }
+    [data-theme="light"] .theme-switch-thumb .icon-sun { display: block; }
+    [data-theme="light"] .theme-switch-thumb .icon-moon { display: none; }
+
+    /* ============================================
+       HERO — cinematic, full bleed
+       ============================================ */
+    .hero {
+      min-height: 100vh;
+      display: flex; align-items: center;
+      padding-top: 64px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Geometric background — SVG-based precision */
+    .hero-geo {
+      position: absolute; inset: 0;
+      pointer-events: none; overflow: hidden;
+    }
+
+    .hero-geo svg {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+    }
+
+    /* Floating geometric shapes */
+    .hero-geo .geo-shape {
+      position: absolute;
+      opacity: 0;
+      animation: geoFadeIn 1.5s var(--ease) forwards;
+    }
+
+    .hero-geo .hex {
+      width: 120px; height: 120px;
+      border: 1px solid var(--accent);
+      opacity: 0.08;
+      clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+      animation: hexRotate 30s linear infinite;
+    }
+
+    .hero-geo .hex-1 { top: 15%; right: 8%; width: 180px; height: 180px; }
+    .hero-geo .hex-2 { bottom: 20%; left: 5%; width: 100px; height: 100px; animation-direction: reverse; animation-duration: 25s; }
+    .hero-geo .hex-3 { top: 60%; right: 30%; width: 60px; height: 60px; opacity: 0.05; animation-duration: 20s; }
+
+    .hero-geo .diamond {
+      position: absolute;
+      width: 80px; height: 80px;
+      border: 1px solid var(--accent);
+      opacity: 0.06;
+      transform: rotate(45deg);
+      animation: diamondPulse 8s ease-in-out infinite;
+    }
+
+    .hero-geo .diamond-1 { top: 25%; left: 60%; }
+    .hero-geo .diamond-2 { bottom: 30%; right: 15%; width: 50px; height: 50px; animation-delay: 2s; }
+
+    .hero-geo .dot-grid {
+      position: absolute;
+      top: 10%; right: 0;
+      width: 200px; height: 300px;
+      background-image: radial-gradient(circle, var(--accent) 1px, transparent 1px);
+      background-size: 20px 20px;
+      opacity: 0.06;
+      animation: dotDrift 15s ease-in-out infinite;
+    }
+
+    .hero-geo .arc {
+      position: absolute;
+      width: 400px; height: 400px;
+      border: 1px solid var(--accent);
+      border-radius: 50%;
+      clip-path: polygon(0 0, 50% 0, 50% 50%, 0 50%);
+      opacity: 0.06;
+      animation: arcRotate 20s linear infinite;
+    }
+
+    .hero-geo .arc-1 { top: -100px; right: -50px; }
+    .hero-geo .arc-2 { bottom: -80px; left: -80px; width: 300px; height: 300px; animation-direction: reverse; animation-duration: 25s; }
+
+    /* Thin crossing lines */
+    .hero-geo .thin-line {
+      position: absolute;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      height: 1px;
+      opacity: 0.08;
+    }
+
+    .hero-geo .thin-line-1 { top: 35%; left: 0; width: 100%; animation: lineSlide 12s ease-in-out infinite; }
+    .hero-geo .thin-line-2 { top: 65%; left: 0; width: 100%; animation: lineSlide 16s ease-in-out infinite reverse; }
+
+    .hero-geo .thin-line-v {
+      position: absolute;
+      background: linear-gradient(transparent, var(--accent), transparent);
+      width: 1px;
+      opacity: 0.06;
+    }
+
+    .hero-geo .thin-line-v-1 { top: 0; left: 70%; height: 100%; animation: lineSlideV 14s ease-in-out infinite; }
+
+    /* Glow orbs */
+    .hero-geo .orb {
+      position: absolute; border-radius: 50%;
+      filter: blur(100px);
+      background: var(--accent);
+    }
+
+    .hero-geo .orb-1 { width: 500px; height: 500px; top: -10%; left: -10%; opacity: 0.06; animation: orbFloat 12s ease-in-out infinite; }
+    .hero-geo .orb-2 { width: 350px; height: 350px; bottom: -5%; right: -5%; opacity: 0.04; animation: orbFloat 15s ease-in-out infinite reverse; }
+
+    @keyframes hexRotate { to { transform: rotate(360deg); } }
+    @keyframes diamondPulse { 0%, 100% { transform: rotate(45deg) scale(1); opacity: 0.06; } 50% { transform: rotate(45deg) scale(1.1); opacity: 0.1; } }
+    @keyframes dotDrift { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-10px, 15px); } }
+    @keyframes arcRotate { to { transform: rotate(360deg); } }
+    @keyframes lineSlide { 0%, 100% { opacity: 0.08; } 50% { opacity: 0.03; } }
+    @keyframes lineSlideV { 0%, 100% { opacity: 0.06; } 50% { opacity: 0.02; } }
+    @keyframes orbFloat { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(30px, -20px); } }
+    @keyframes geoFadeIn { to { opacity: 1; } }
+
+    .hero-inner {
+      max-width: var(--max-w); margin: 0 auto;
+      padding: 0 var(--pad);
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      align-items: center;
+      gap: 60px;
+      position: relative; z-index: 1;
+    }
+
+    .hero-content {}
+
+    .hero-presented {
+      display: flex; align-items: center; gap: 14px;
+      margin-bottom: 36px;
+    }
+
+    .hero-presented span {
+      font-size: 0.6rem; font-weight: 400;
+      letter-spacing: 0.25em; text-transform: uppercase;
+      color: var(--text-muted);
+      transition: color 0.6s var(--ease);
+    }
+
+    .hero-presented::before {
+      content: ''; width: 24px; height: 1px; background: var(--accent);
+    }
+
+    .hero-presented img {
+      height: 72px; width: auto;
+    }
+
+    .hero-title {
+      font-size: clamp(3rem, 8vw, 5.5rem);
+      font-weight: 900; letter-spacing: -0.02em;
+      line-height: 1.0; margin-bottom: 8px;
+      color: var(--text);
+      transition: color 0.6s var(--ease);
+    }
+
+    .hero-title .accent { color: var(--accent); }
+
+    .hero-title rt {
+      font-size: 0.18em; font-weight: 400;
+      letter-spacing: 0.12em; color: var(--accent);
+    }
+
+    .hero-subtitle {
+      font-size: clamp(0.85rem, 2vw, 1.05rem);
+      font-weight: 400; letter-spacing: 0.2em;
+      color: var(--text-muted);
+      margin-top: 16px; margin-bottom: 40px;
+      transition: color 0.6s var(--ease);
+    }
+
+    .hero-desc {
+      font-size: 0.92rem; font-weight: 300;
+      color: var(--text-sub); line-height: 2.1;
+      max-width: 440px;
+      transition: color 0.6s var(--ease);
+    }
+
+    .hero-desc strong {
+      color: var(--text); font-weight: 600;
+      transition: color 0.6s var(--ease);
+    }
+
+    .hero-scroll {
+      display: flex; align-items: center; gap: 16px;
+      margin-top: 56px;
+    }
+
+    .hero-scroll-line {
+      width: 40px; height: 1px; background: var(--border-hover);
+      position: relative; overflow: hidden;
+    }
+
+    .hero-scroll-line::after {
+      content: ''; position: absolute;
+      top: 0; left: -100%; width: 100%; height: 100%;
+      background: var(--accent);
+      animation: scrollLine 2s ease-in-out infinite;
+    }
+
+    @keyframes scrollLine { 0% { left: -100%; } 100% { left: 100%; } }
+
+    .hero-scroll-text {
+      font-size: 0.6rem; font-weight: 500;
+      letter-spacing: 0.2em; color: var(--text-muted);
+      text-transform: uppercase;
+      transition: color 0.6s var(--ease);
+    }
+
+    /* Hero visual — D@ISM logo large */
+    .hero-visual {
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+    }
+
+    .hero-visual img {
+      width: 100%; max-width: 380px; height: auto;
+      filter: drop-shadow(0 0 80px rgba(201,123,91,0.15));
+      animation: logoFloat 6s ease-in-out infinite;
+    }
+
+    @keyframes logoFloat {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-12px) scale(1.01); }
+    }
+
+    /* Hero vertical side text */
+    .hero-side {
+      position: absolute;
+      bottom: 80px; right: var(--pad);
+      writing-mode: vertical-rl;
+      font-size: 0.6rem; font-weight: 500;
+      letter-spacing: 0.3em; color: var(--text-muted);
+      text-transform: uppercase;
+      z-index: 2;
+      transition: color 0.6s var(--ease);
+    }
+
+    /* ============================================
+       CONTAINER
+       ============================================ */
+    .container {
+      max-width: var(--max-w); margin: 0 auto; padding: 0 var(--pad);
+      position: relative; z-index: 1;
+    }
+
+    /* ============================================
+       SECTION COMMON
+       ============================================ */
+    section { padding: 140px 0; }
+
+    .section-header { margin-bottom: 72px; }
+
+    .section-label {
+      font-size: 0.6rem; font-weight: 600;
+      letter-spacing: 0.35em; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 16px;
+      display: flex; align-items: center; gap: 12px;
+    }
+
+    .section-label::before {
+      content: ''; width: 20px; height: 1px; background: var(--accent);
+    }
+
+    .section-title {
+      font-size: clamp(1.8rem, 4.5vw, 2.8rem);
+      font-weight: 800; letter-spacing: -0.02em;
+      line-height: 1.3;
+    }
+
+    .section-sub {
+      font-size: 0.85rem; color: var(--text-sub);
+      margin-top: 16px; line-height: 1.8;
+      transition: color 0.6s var(--ease);
+    }
+
+    /* ============================================
+       ABOUT
+       ============================================ */
+    .about { border-top: 1px solid var(--border); transition: border-color 0.6s var(--ease); }
+
+    .about-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 80px; align-items: start;
+    }
+
+    .about-text p {
+      font-size: 0.92rem; color: var(--text-sub);
+      line-height: 2.2; margin-bottom: 20px;
+      transition: color 0.6s var(--ease);
+    }
+
+    .about-text strong {
+      color: var(--text); font-weight: 600;
+      transition: color 0.6s var(--ease);
+    }
+
+    .about-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+    .stat-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 8px; padding: 32px 24px;
+      transition: all 0.4s var(--ease);
+      position: relative; overflow: hidden;
+    }
+
+    .stat-card::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, transparent 60%, var(--accent-glow));
+      opacity: 0; transition: opacity 0.4s;
+    }
+
+    .stat-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+    .stat-card:hover::after { opacity: 1; }
+
+    .stat-number {
+      font-size: 2.2rem; font-weight: 900;
+      color: var(--accent-light); line-height: 1; margin-bottom: 8px;
+      position: relative; z-index: 1;
+    }
+
+    .stat-number small { font-size: 0.4em; }
+
+    .stat-label {
+      font-size: 0.7rem; color: var(--text-muted);
+      letter-spacing: 0.08em; position: relative; z-index: 1;
+      transition: color 0.6s var(--ease);
+    }
+
+    /* ============================================
+       CONTENTS GRID
+       ============================================ */
+    .contents { border-top: 1px solid var(--border); transition: border-color 0.6s var(--ease); }
+
+    .contents-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+    }
+
+    .content-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 8px; padding: 40px 28px;
+      position: relative; overflow: hidden; cursor: pointer;
+      transition: all 0.5s var(--ease);
+      height: 280px;
+      display: flex; flex-direction: column;
+    }
+
+    .content-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), transparent 80%);
+      opacity: 0; transition: opacity 0.4s;
+    }
+
+    .content-card::after {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(circle at top left, var(--accent-glow) 0%, transparent 60%);
+      opacity: 0; transition: opacity 0.5s;
+    }
+
+    .content-card:hover {
+      border-color: var(--accent);
+      background: var(--bg-card-hover);
+      transform: translateY(-6px);
+      box-shadow: 0 24px 64px rgba(201,123,91,0.06);
+    }
+
+    .content-card:hover::before { opacity: 1; }
+    .content-card:hover::after { opacity: 1; }
+
+    .content-card.featured {
+      grid-column: span 1;
+    }
+
+    .card-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: var(--accent-glow);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 24px; transition: all 0.4s;
+      position: relative; z-index: 1;
+    }
+
+    .content-card:hover .card-icon {
+      background: var(--accent-glow-strong);
+      transform: scale(1.05);
+    }
+
+    .card-icon svg {
+      width: 18px; height: 18px; stroke: var(--accent-light);
+      fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
+    }
+
+    .card-label {
+      font-size: 0.6rem; font-weight: 600;
+      letter-spacing: 0.25em; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 10px;
+      position: relative; z-index: 1;
+    }
+
+    .card-title {
+      font-size: 1.15rem; font-weight: 700;
+      margin-bottom: 10px; color: var(--text);
+      position: relative; z-index: 1;
+      transition: color 0.6s var(--ease);
+    }
+
+    .card-desc {
+      font-size: 0.82rem; color: var(--text-sub); line-height: 1.8;
+      position: relative; z-index: 1;
+      transition: color 0.6s var(--ease), opacity 0.3s;
+    }
+
+    .content-card:hover .card-desc { opacity: 0; position: absolute; }
+
+    .card-reveal {
+      margin-top: auto;
+      opacity: 0;
+      position: relative; z-index: 1;
+      transition: opacity 0.4s var(--ease);
+    }
+
+    .content-card:hover .card-reveal { opacity: 1; }
+
+    .card-reveal ul {
+      list-style: none; padding: 0;
+      border-top: 1px solid var(--border); padding-top: 14px;
+    }
+
+    .card-reveal li {
+      font-size: 0.75rem; color: var(--text-muted);
+      padding: 4px 0; display: flex; align-items: center; gap: 8px;
+      transition: color 0.6s var(--ease);
+    }
+
+    .card-reveal li::before {
+      content: ''; width: 3px; height: 3px;
+      border-radius: 50%; background: var(--accent); flex-shrink: 0;
+    }
+
+    /* ============================================
+       CONSULTING CTA
+       ============================================ */
+    .consulting { border-top: 1px solid var(--border); transition: border-color 0.6s var(--ease); }
+
+    .cta-box {
+      background: linear-gradient(135deg, rgba(201,123,91,0.06) 0%, var(--bg-card) 100%);
+      border: 1px solid rgba(201,123,91,0.15);
+      border-radius: 16px; padding: 72px 64px;
+      display: grid; grid-template-columns: 1fr auto;
+      gap: 48px; align-items: center;
+      transition: background 0.6s var(--ease);
+      position: relative; overflow: hidden;
+    }
+
+    .cta-box::before {
+      content: ''; position: absolute;
+      top: -100px; right: -100px;
+      width: 300px; height: 300px;
+      border-radius: 50%;
+      background: var(--accent);
+      opacity: 0.03; filter: blur(60px);
+    }
+
+    .cta-text { position: relative; z-index: 1; }
+
+    .cta-text h3 {
+      font-size: 1.8rem; font-weight: 800;
+      margin-bottom: 16px; letter-spacing: -0.01em;
+    }
+
+    .cta-text p {
+      font-size: 0.9rem; color: var(--text-sub); line-height: 2;
+      transition: color 0.6s var(--ease);
+    }
+
+    .cta-features { display: flex; gap: 24px; margin-top: 24px; list-style: none; }
+
+    .cta-features li {
+      font-size: 0.72rem; color: var(--text-muted);
+      letter-spacing: 0.06em;
+      display: flex; align-items: center; gap: 8px;
+      transition: color 0.6s var(--ease);
+    }
+
+    .cta-features li::before {
+      content: ''; width: 4px; height: 4px;
+      border-radius: 50%; background: var(--accent);
+    }
+
+    .cta-button {
+      display: inline-flex; align-items: center; gap: 12px;
+      background: var(--accent); color: var(--cta-text);
+      font-weight: 700; font-size: 0.88rem; letter-spacing: 0.06em;
+      padding: 18px 40px; border-radius: 8px;
+      transition: all 0.4s var(--ease); white-space: nowrap;
+      position: relative; z-index: 1;
+    }
+
+    .cta-button:hover {
+      background: var(--accent-light); color: var(--cta-text);
+      transform: translateY(-3px);
+      box-shadow: 0 16px 40px rgba(201,123,91,0.3);
+    }
+
+    .cta-button svg {
+      width: 16px; height: 16px; stroke: currentColor;
+      fill: none; stroke-width: 2; stroke-linecap: round;
+      transition: transform 0.3s;
+    }
+
+    .cta-button:hover svg { transform: translateX(4px); }
+
+    /* ============================================
+       LINKS
+       ============================================ */
+    .links { border-top: 1px solid var(--border); transition: border-color 0.6s var(--ease); }
+
+    .links-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;
+    }
+
+    .link-card {
+      display: flex; align-items: center; gap: 16px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 8px; padding: 24px;
+      transition: all 0.4s var(--ease);
+    }
+
+    .link-card:hover {
+      border-color: var(--accent); background: var(--bg-card-hover);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 32px rgba(201,123,91,0.05);
+    }
+
+    .link-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: var(--accent-glow);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      transition: background 0.3s;
+    }
+
+    .link-card:hover .link-icon { background: var(--accent-glow-strong); }
+
+    .link-icon svg { width: 18px; height: 18px; fill: var(--accent-light); }
+
+    .link-title { font-size: 0.88rem; font-weight: 600; color: var(--text); transition: color 0.6s var(--ease); }
+    .link-desc { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; transition: color 0.6s var(--ease); }
+
+    /* ============================================
+       FOOTER
+       ============================================ */
+    footer {
+      border-top: 1px solid var(--border); padding: 56px 0;
+      position: relative; transition: border-color 0.6s var(--ease);
+    }
+
+    .footer-inner {
+      max-width: var(--max-w); margin: 0 auto; padding: 0 var(--pad);
+      display: flex; justify-content: space-between; align-items: end;
+    }
+
+    .footer-brand {
+      font-size: 0.75rem; font-weight: 700;
+      letter-spacing: 0.2em; color: var(--text-muted);
+      margin-bottom: 6px; transition: color 0.6s var(--ease);
+    }
+
+    .footer-copy {
+      font-size: 0.6rem; color: var(--text-muted);
+      letter-spacing: 0.05em; transition: color 0.6s var(--ease);
+    }
+
+    .footer-disclaimer {
+      font-size: 0.6rem; color: var(--text-muted);
+      max-width: 400px; line-height: 1.8; text-align: right;
+      transition: color 0.6s var(--ease);
+    }
+
+    .footer-hidden {
+      position: absolute;
+      bottom: 20px; left: var(--pad);
+      opacity: 0.08; transition: opacity 0.3s;
+      color: var(--text-muted);
+      font-size: 0.6rem; font-weight: 700;
+      letter-spacing: 0.1em;
+    }
+
+    .footer-hidden:hover { opacity: 0.2; }
+
+    /* ============================================
+       RESPONSIVE
+       ============================================ */
+    @media (max-width: 960px) {
+      :root { --pad: 32px; }
+      .hero-inner { grid-template-columns: 1fr; }
+      .hero-visual { display: none; }
+      .hero-side { display: none; }
+      .about-grid { grid-template-columns: 1fr; gap: 48px; }
+      .contents-grid { grid-template-columns: 1fr 1fr; }
+      .content-card.featured { grid-column: span 1; }
+      .cta-box { grid-template-columns: 1fr; padding: 48px 36px; }
+      section { padding: 100px 0; }
+    }
+
+    @media (max-width: 640px) {
+      :root { --pad: 24px; }
+      .nav-links { display: none; }
+      .contents-grid { grid-template-columns: 1fr; }
+      .content-card.featured { grid-column: span 1; }
+      .about-stats { grid-template-columns: 1fr; }
+      .footer-inner { flex-direction: column; align-items: start; gap: 20px; }
+      .footer-disclaimer { text-align: left; }
+      .card-reveal { max-height: none; opacity: 1; }
+      .hero-title { font-size: 2.6rem; }
+      .cta-box { padding: 36px 28px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========== NAV ========== -->
+  <nav>
+    <div class="nav-inner">
+      <a href="#" class="nav-brand">
+        <img src="assets/images/icon-transparent.png" alt="">
+        <span class="nav-brand-name">DAISUKEMAN <ruby>BASE<rt>ひみつきち</rt></ruby></span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="#about">About</a></li>
+        <li><a href="#contents">Contents</a></li>
+        <li><a href="#consulting">Consulting</a></li>
+        <li><a href="#connect">Connect</a></li>
+      </ul>
+      <div class="nav-right">
+        <div class="theme-switch">
+          <span class="theme-switch-label">DARK</span>
+          <div class="theme-switch-track" id="themeToggle">
+            <div class="theme-switch-thumb">
+              <svg class="icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+              <svg class="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            </div>
+          </div>
+          <span class="theme-switch-label">LIGHT</span>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ========== HERO ========== -->
+  <header class="hero">
+    <!-- Geometric background -->
+    <div class="hero-geo" aria-hidden="true">
+      <div class="hex hex-1"></div>
+      <div class="hex hex-2"></div>
+      <div class="hex hex-3"></div>
+      <div class="diamond diamond-1"></div>
+      <div class="diamond diamond-2"></div>
+      <div class="dot-grid"></div>
+      <div class="arc arc-1"></div>
+      <div class="arc arc-2"></div>
+      <div class="thin-line thin-line-1"></div>
+      <div class="thin-line thin-line-2"></div>
+      <div class="thin-line-v thin-line-v-1"></div>
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+    </div>
+
+    <div class="hero-inner">
+      <div class="hero-content">
+        <div class="hero-presented reveal">
+          <span>Presented by</span>
+          <img src="assets/images/daism-nameplate-night.png" alt="DAISM" class="img-night">
+          <img src="assets/images/daism-nameplate-day.png" alt="DAISM" class="img-day">
+        </div>
+        <h1 class="hero-title reveal reveal-delay-1">
+          DAISUKEMAN<br>
+          <ruby>BASE<rt>ひみつきち</rt></ruby>
+        </h1>
+        <p class="hero-subtitle reveal reveal-delay-2">常に挑戦するおじさんの秘密基地</p>
+        <p class="hero-desc reveal reveal-delay-3">
+          40代、脱サラ。退路なし。<br>
+          ツール開発、AI動画、コンサル、ナレッジ。<br>
+          <strong>等身大のおじさんのリアルが、ここにある。</strong>
+        </p>
+        <div class="hero-scroll reveal reveal-delay-4">
+          <div class="hero-scroll-line"></div>
+          <span class="hero-scroll-text">Scroll</span>
+        </div>
+      </div>
+      <div class="hero-visual reveal reveal-delay-2">
+        <img src="assets/images/icon-transparent.png" alt="ダイスケマン">
+      </div>
+    </div>
+
+    <span class="hero-side">D@ISM &mdash; Est. 2026</span>
+  </header>
+
+  <!-- ========== ABOUT ========== -->
+  <section class="about" id="about">
+    <div class="container">
+      <div class="section-header reveal">
+        <p class="section-label">About</p>
+        <h2 class="section-title">覚悟を決めた、<br>おじさんの話。</h2>
+      </div>
+      <div class="about-grid">
+        <div class="about-text reveal">
+          <p>
+            FX、怪しいツール、詐欺まがいの情報商材。<br>
+            数々の失敗を重ね、<strong>数千円すら稼げなかった</strong>おじさんが、<br>
+            2023年、AIに出会った。
+          </p>
+          <p>
+            Stable Diffusionで初めて画像を作り、プラットフォームで販売。<br>
+            あれよあれよと<strong>5万、10万と売れていく</strong>。<br>
+            「これは本物だ」と確信し、本気で取り組み始めた。
+          </p>
+          <p>
+            しかし、プラットフォームは簡単にはしごを外してくる。<br>
+            昨日までOKだったジャンルが突然NG。即、垢BAN。<br>
+            そこからAI動画に活路を見出し、<strong>動画だけで累計300万超</strong>。<br>
+            事業全体では<strong>500万以上</strong>を達成。
+          </p>
+          <p>
+            2026年2月に脱サラ。4月に独立開業。自作ツール50以上。<br>
+            <strong>「遅くない。今からでも間に合う」</strong>を体現中。
+          </p>
+        </div>
+        <div class="about-stats">
+          <div class="stat-card reveal">
+            <div class="stat-number">50+</div>
+            <div class="stat-label">自作ツール</div>
+          </div>
+          <div class="stat-card reveal reveal-delay-1">
+            <div class="stat-number">500<small>万+</small></div>
+            <div class="stat-label">事業累計売上</div>
+          </div>
+          <div class="stat-card reveal reveal-delay-2">
+            <div class="stat-number">43</div>
+            <div class="stat-label">歳からAI全振り</div>
+          </div>
+          <div class="stat-card reveal reveal-delay-3">
+            <div class="stat-number">0</div>
+            <div class="stat-label">退路の数</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== CONTENTS ========== -->
+  <section class="contents" id="contents">
+    <div class="container">
+      <div class="section-header reveal">
+        <p class="section-label">Contents</p>
+        <h2 class="section-title">秘密基地の中身</h2>
+        <p class="section-sub">ホバーすると、何が眠っているか覗けます。</p>
+      </div>
+      <div class="contents-grid">
+
+        <div class="content-card featured reveal">
+          <div class="card-icon">
+            <svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+          </div>
+          <span class="card-label">Tools</span>
+          <h3 class="card-title">開発50連発</h3>
+          <p class="card-desc">Claude Codeで毎日ツールを作って無料公開するチャレンジ。診断・占い・実用ツールを量産中。</p>
+          <div class="card-reveal">
+            <ul>
+              <li>副業適性診断</li>
+              <li>AIスキルレベル診断</li>
+              <li>音声トリミングツール</li>
+              <li>ラットレース脱出度チェッカー</li>
+              <li>...and more</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="content-card reveal reveal-delay-1">
+          <div class="card-icon">
+            <svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+          </div>
+          <span class="card-label">Videos</span>
+          <h3 class="card-title">AI動画コンテンツ</h3>
+          <p class="card-desc">AI技術を活用した動画制作とコンテンツ販売。</p>
+          <div class="card-reveal">
+            <ul>
+              <li>DLsite / FANZA / Booth</li>
+              <li>AI動画制作ノウハウ</li>
+              <li>Pixiv自動投稿</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="content-card reveal reveal-delay-1">
+          <div class="card-icon">
+            <svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          </div>
+          <span class="card-label">Development</span>
+          <h3 class="card-title">開発ナレッジ</h3>
+          <p class="card-desc">非エンジニアがClaude Codeで開発する技術メモ。</p>
+          <div class="card-reveal">
+            <ul>
+              <li>Claude Code活用術</li>
+              <li>Cloudflare Pagesデプロイ</li>
+              <li>Python / Electron / Node.js</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="content-card reveal reveal-delay-2">
+          <div class="card-icon">
+            <svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          </div>
+          <span class="card-label">Curriculum</span>
+          <h3 class="card-title">カリキュラム</h3>
+          <p class="card-desc">AI副業を始めるためのロードマップと学習コンテンツ。</p>
+          <div class="card-reveal">
+            <ul>
+              <li>AI副業スタートガイド</li>
+              <li>ツール開発入門</li>
+              <li>コンテンツ販売の始め方</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="content-card reveal reveal-delay-2">
+          <div class="card-icon">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          </div>
+          <span class="card-label">Knowledge</span>
+          <h3 class="card-title">ナレッジ・雑記</h3>
+          <p class="card-desc">日々の学び、気づき、失敗談。リアルな記録。</p>
+          <div class="card-reveal">
+            <ul>
+              <li>脱サラ日記</li>
+              <li>マーケティング実験</li>
+              <li>仕組み化メモ</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="content-card reveal reveal-delay-2">
+          <div class="card-icon">
+            <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </div>
+          <span class="card-label">Life</span>
+          <h3 class="card-title">家族と趣味</h3>
+          <p class="card-desc">3児の父。家族と趣味の時間も全力。</p>
+          <div class="card-reveal">
+            <ul>
+              <li>子育てと仕事の両立</li>
+              <li>カレー / クレープ（飲食構想）</li>
+              <li>浜名湖民泊プロジェクト</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== CONSULTING ========== -->
+  <section class="consulting" id="consulting">
+    <div class="container">
+      <div class="section-header reveal">
+        <p class="section-label">Consulting</p>
+        <h2 class="section-title">個別コンサル</h2>
+      </div>
+      <div class="cta-box reveal">
+        <div class="cta-text">
+          <h3>個別コンサル — 成果にコミットする伴走型</h3>
+          <p>
+            現役トッププレイヤー・クローズドコミュニティ講師が直接指導。<br>
+            <strong>0→1の達成者 20名以上輩出</strong>、高額実績者も多数。<br>
+            「継続できる0→1」に焦点を置き、あなたの成果にフォーカスして伴走します。<br>
+            専用ツールの提供あり。
+          </p>
+          <p style="margin-top: 12px;">
+            自分に甘い方、弱さが出る方には厳しいことも言います。<br>
+            一緒に走り抜きましょう。僕が伴走します。
+          </p>
+          <ul class="cta-features">
+            <li>完全マンツーマン</li>
+            <li>0→1達成者 20名+</li>
+            <li>専用ツール提供</li>
+            <li>成果にコミット</li>
+          </ul>
+        </div>
+        <a href="https://lin.ee/Lqr5nTX" target="_blank" rel="noopener" class="cta-button">
+          LINE で相談する
+          <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== CONNECT ========== -->
+  <section class="links" id="connect">
+    <div class="container">
+      <div class="section-header reveal">
+        <p class="section-label">Connect</p>
+        <h2 class="section-title">つながる</h2>
+      </div>
+      <div class="links-grid">
+        <a href="https://x.com/daisukeman9111" target="_blank" rel="noopener" class="link-card reveal">
+          <div class="link-icon">
+            <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          </div>
+          <div class="link-info">
+            <div class="link-title">X (Twitter)</div>
+            <div class="link-desc">@daisukeman9111</div>
+          </div>
+        </a>
+        <a href="https://lin.ee/Lqr5nTX" target="_blank" rel="noopener" class="link-card reveal reveal-delay-1">
+          <div class="link-icon">
+            <svg viewBox="0 0 24 24"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
+          </div>
+          <div class="link-info">
+            <div class="link-title">LINE公式</div>
+            <div class="link-desc">AI活用の相談はこちら</div>
+          </div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FOOTER ========== -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-left">
+        <div class="footer-brand">D@ISM / DAISUKEMAN BASE</div>
+        <p class="footer-copy">&copy; 2026 D@ISM All rights reserved.</p>
+      </div>
+      <p class="footer-disclaimer">
+        本サイトの診断・占いツールは一般的な傾向や統計データを参考に作成していますが、
+        個人の状況により結果が異なる場合があります。あくまで参考としてお楽しみください。
+      </p>
+    </div>
+    <a href="https://daism-corp.pages.dev" class="footer-hidden" aria-label="Corporate" target="_blank" rel="noopener">D</a>
+  </footer>
+
+  <script>
+    // Theme toggle
+    const toggle = document.getElementById('themeToggle');
+    const html = document.documentElement;
+    const saved = localStorage.getItem('theme');
+    if (saved) html.setAttribute('data-theme', saved);
+
+    toggle.addEventListener('click', () => {
+      const current = html.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+    });
+
+    // Scroll reveal
+    const reveals = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+    reveals.forEach(el => observer.observe(el));
+  </script>
+
+</body>
+</html>
