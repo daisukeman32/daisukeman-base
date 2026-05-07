@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>副業適性診断 | ダイスケマンの秘密倉庫</title>
+  <meta name="description" content="15問であなたに向いている副業タイプをホランド理論ベースで診断。">
+  <meta property="og:title" content="副業適性診断 | ダイスケマンの秘密倉庫">
+  <meta property="og:description" content="15問であなたに向いている副業タイプを診断します。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+JP:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --font: 'Inter', 'Noto Sans JP', -apple-system, sans-serif;
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+      --max-w: 640px;
+      --pad: 24px;
+    }
+
+    [data-theme="dark"] {
+      --bg: #060606;
+      --bg-card: #0f0f0f;
+      --bg-card-hover: #1a1a1a;
+      --border: #181818;
+      --border-hover: #2a2a2a;
+      --text: #eee;
+      --text-sub: #9a9a9a;
+      --text-muted: #555;
+      --bar-fg: #ccc;
+      --bar-bg: #1a1a1a;
+      --btn-bg: #eee;
+      --btn-text: #060606;
+      --btn-hover: #fff;
+    }
+
+    [data-theme="light"] {
+      --bg: #f5f3f0;
+      --bg-card: #fff;
+      --bg-card-hover: #eee;
+      --border: #ddd;
+      --border-hover: #bbb;
+      --text: #1a1a1a;
+      --text-sub: #666;
+      --text-muted: #999;
+      --bar-fg: #333;
+      --bar-bg: #ddd;
+      --btn-bg: #1a1a1a;
+      --btn-text: #fff;
+      --btn-hover: #000;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.8;
+      -webkit-font-smoothing: antialiased;
+      transition: background 0.4s var(--ease), color 0.4s var(--ease);
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+    }
+
+    .nav {
+      padding: 16px var(--pad);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    .nav a {
+      font-size: 0.7rem; font-weight: 500;
+      color: var(--text-muted); text-decoration: none;
+      display: flex; align-items: center; gap: 6px;
+      transition: color 0.2s;
+    }
+    .nav a:hover { color: var(--text); }
+
+    .nav a svg {
+      width: 12px; height: 12px; stroke: currentColor; fill: none;
+      stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+    }
+
+    .theme-toggle {
+      background: none; border: 1px solid var(--border);
+      color: var(--text-sub); cursor: pointer;
+      font-size: 0.65rem; font-family: var(--font);
+      padding: 6px 12px; border-radius: 4px;
+      transition: all 0.2s;
+    }
+    .theme-toggle:hover { border-color: var(--text-sub); color: var(--text); }
+
+    .main {
+      flex: 1;
+      max-width: var(--max-w); width: 100%;
+      margin: 0 auto; padding: 40px var(--pad) 60px;
+    }
+
+    .tool-title {
+      font-size: clamp(1.4rem, 4vw, 1.8rem);
+      font-weight: 800; letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+
+    .tool-subtitle {
+      font-size: 0.82rem; color: var(--text-muted);
+      margin-bottom: 40px;
+      transition: color 0.4s var(--ease);
+    }
+
+    /* START SCREEN */
+    .start-screen { text-align: center; }
+    .start-screen .start-desc {
+      font-size: 0.85rem; color: var(--text-sub);
+      line-height: 2; margin-bottom: 32px; text-align: left;
+    }
+
+    .btn-start {
+      display: inline-block;
+      background: var(--btn-bg); color: var(--btn-text);
+      font-weight: 700; font-size: 0.9rem;
+      padding: 14px 40px; border-radius: 6px;
+      border: none; cursor: pointer;
+      font-family: var(--font);
+      transition: all 0.3s var(--ease);
+    }
+    .btn-start:hover { background: var(--btn-hover); transform: translateY(-1px); }
+
+    /* PROGRESS */
+    .progress-wrap { display: none; margin-bottom: 32px; }
+    .progress-wrap.active { display: block; }
+
+    .progress-bar {
+      width: 100%; height: 2px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+    .progress-fill {
+      height: 100%; width: 0%;
+      background: var(--text-sub);
+      border-radius: 2px;
+      transition: width 0.5s var(--ease);
+    }
+    .progress-text {
+      font-size: 0.65rem; color: var(--text-muted);
+      transition: color 0.4s var(--ease);
+    }
+
+    /* QUESTION */
+    .quiz-wrap { display: none; }
+    .quiz-wrap.active { display: block; }
+
+    .question-img {
+      width: 100%; height: 200px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      opacity: 0.85;
+    }
+
+    .question-text {
+      font-size: 1.05rem; font-weight: 600;
+      margin-bottom: 20px; line-height: 1.7;
+    }
+    .choices { display: flex; flex-direction: column; gap: 10px; }
+
+    .choice {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      font-size: 0.88rem; font-weight: 400;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.25s var(--ease);
+      font-family: var(--font);
+      text-align: left; width: 100%;
+    }
+    .choice:hover {
+      border-color: var(--border-hover);
+      background: var(--bg-card-hover);
+      transform: translateX(4px);
+    }
+    .choice:active {
+      transform: translateX(4px) scale(0.99);
+    }
+
+    /* BACK BUTTON */
+    .btn-back {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: transparent; color: var(--text-muted);
+      font-weight: 500; font-size: 0.75rem;
+      padding: 10px 0; margin-top: 16px;
+      border: none; cursor: pointer;
+      font-family: var(--font);
+      transition: color 0.2s;
+    }
+    .btn-back:hover { color: var(--text); }
+    .btn-back svg {
+      width: 14px; height: 14px; stroke: currentColor; fill: none;
+      stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+    }
+
+    /* RESULT */
+    .result { display: none; }
+    .result.active { display: block; }
+
+    .result-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 40px 28px;
+      transition: all 0.4s var(--ease);
+    }
+
+    .result-img {
+      width: 100%; height: 220px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-bottom: 24px;
+      opacity: 0.9;
+    }
+
+    .result-label {
+      font-size: 0.6rem; font-weight: 600;
+      letter-spacing: 0.3em; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .result-type {
+      font-size: clamp(1.5rem, 5vw, 2rem);
+      font-weight: 900; margin-bottom: 6px;
+      letter-spacing: -0.02em; text-align: center;
+    }
+
+    .result-tagline {
+      font-size: 0.85rem; color: var(--text-sub);
+      font-weight: 500; margin-bottom: 28px;
+      text-align: center;
+    }
+
+    .result-section {
+      margin-bottom: 24px;
+    }
+    .result-section-title {
+      font-size: 0.7rem; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 6px;
+    }
+    .result-section p, .result-section li {
+      font-size: 0.85rem; color: var(--text-sub);
+      line-height: 1.9;
+    }
+    .result-section ul {
+      list-style: none; padding: 0;
+    }
+    .result-section ul li::before {
+      content: "- ";
+      color: var(--text-muted);
+    }
+
+    /* SCORE BARS */
+    .score-bars { margin-top: 8px; }
+    .score-row {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 8px;
+    }
+    .score-label {
+      font-size: 0.72rem; color: var(--text-sub);
+      width: 140px; flex-shrink: 0;
+      text-align: right;
+    }
+    .score-track {
+      flex: 1; height: 6px;
+      background: var(--bar-bg);
+      border-radius: 3px; overflow: hidden;
+    }
+    .score-bar {
+      height: 100%;
+      background: var(--bar-fg);
+      border-radius: 3px;
+      transition: width 0.8s var(--ease);
+    }
+    .score-val {
+      font-size: 0.65rem; color: var(--text-muted);
+      width: 28px;
+    }
+
+    .result-actions {
+      display: flex; gap: 10px; justify-content: center;
+      flex-wrap: wrap; margin-top: 32px;
+    }
+
+    .btn-share {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--btn-bg); color: var(--btn-text);
+      font-weight: 600; font-size: 0.82rem;
+      padding: 12px 24px; border-radius: 6px;
+      border: none; cursor: pointer;
+      font-family: var(--font);
+      transition: all 0.3s var(--ease);
+    }
+    .btn-share:hover {
+      background: var(--btn-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-retry {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: transparent; color: var(--text-sub);
+      font-weight: 500; font-size: 0.82rem;
+      padding: 12px 24px; border-radius: 6px;
+      border: 1px solid var(--border); cursor: pointer;
+      font-family: var(--font);
+      transition: all 0.3s var(--ease);
+    }
+    .btn-retry:hover {
+      border-color: var(--text-sub); color: var(--text);
+    }
+
+    .footer {
+      padding: 20px var(--pad);
+      text-align: center;
+    }
+    .footer p {
+      font-size: 0.6rem; color: var(--text-muted);
+      line-height: 1.8;
+      transition: color 0.4s var(--ease);
+    }
+
+    @media (max-width: 480px) {
+      .score-label { width: 100px; font-size: 0.65rem; }
+      .result-card { padding: 28px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="nav">
+    <a href="../">
+      <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      秘密倉庫に戻る
+    </a>
+    <button class="theme-toggle" id="themeToggle">LIGHT</button>
+  </div>
+
+  <div class="main">
+    <h1 class="tool-title">副業適性診断</h1>
+    <p class="tool-subtitle">15問であなたに合った副業タイプを診断します</p>
+
+    <div id="startScreen" class="start-screen">
+      <div class="start-desc">
+        ホランド理論（RIASEC）とビッグファイブをベースに、あなたの日常の行動パターンから最適な副業タイプを導き出します。所要時間は約3分です。<br><br><strong style="font-size:1rem;color:var(--text);">深く考えず、直感で選んでください。</strong>
+      </div>
+      <button class="btn-start" id="btnStart">診断を始める</button>
+    </div>
+
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-text" id="progressText"></div>
+    </div>
+
+    <div class="quiz-wrap" id="quiz"></div>
+
+    <div class="result" id="result">
+      <div class="result-card" id="resultCard"></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>
+      本診断はホランド理論（RIASEC）とビッグファイブを参考に作成しています。<br>
+      個人の状況により結果が異なる場合があります。参考としてお楽しみください。
+    </p>
+  </div>
+
+  <script>
+    // --- Theme ---
+    const themeToggle = document.getElementById('themeToggle');
+    function setTheme(t) {
+      document.documentElement.setAttribute('data-theme', t);
+      themeToggle.textContent = t === 'dark' ? 'LIGHT' : 'DARK';
+      localStorage.setItem('sjf-theme', t);
+    }
+    themeToggle.addEventListener('click', () => {
+      setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+    });
+    setTheme(localStorage.getItem('sjf-theme') || 'dark');
+
+    // --- Types ---
+    // scores index: [creator, builder, stock, consul, researcher]
+    const TYPE = {
+      CREATOR: 0,
+      BUILDER: 1,
+      STOCK: 2,
+      CONSUL: 3,
+      RESEARCHER: 4
+    };
+
+    // ===================================================================
+    // 質問データ（ホランド理論RIASEC + ビッグファイブ + 行動経済学ベース）
+    // 各選択肢: scores = [creator, builder, stock, consul, researcher]
+    // ===================================================================
+    const questions = [
+      {
+        q: "予定のない休日の午後。気づいたら何してる？",
+        img: "img/q01.png",
+        a: [
+          { text: "スマホでSNSか動画をダラダラ見てる", scores: [3, 0, 0, 0, 1] },
+          { text: "ゲームしてる", scores: [1, 2, 0, 0, 1] },
+          { text: "ネットで気になるものを調べまくってる", scores: [0, 1, 0, 0, 3] },
+          { text: "友達や家族とLINEしたり電話してる", scores: [0, 0, 0, 3, 0] },
+          { text: "特に何もしてない。昼寝かぼーっとしてる", scores: [0, 0, 3, 0, 1] }
+        ]
+      },
+      {
+        q: "YouTubeを開いた。最初にタップするのは？",
+        img: "img/q02.png",
+        a: [
+          { text: "おすすめに出てきた面白そうな動画", scores: [3, 0, 0, 0, 0] },
+          { text: "ガジェット・テック系のレビュー", scores: [0, 3, 0, 0, 1] },
+          { text: "お金・投資・節約系のハウツー", scores: [0, 0, 3, 0, 1] },
+          { text: "好きな配信者のトーク・雑談系", scores: [1, 0, 0, 3, 0] },
+          { text: "ニュースか解説・ドキュメンタリー系", scores: [0, 0, 1, 0, 3] }
+        ]
+      },
+      {
+        q: "Amazonで買い物。最初に見るのは？",
+        img: "img/q03.png",
+        a: [
+          { text: "見た目・デザイン・写真", scores: [3, 0, 0, 0, 0] },
+          { text: "スペック・仕様の詳細", scores: [0, 3, 0, 0, 1] },
+          { text: "値段とポイント還元率", scores: [0, 0, 3, 0, 0] },
+          { text: "レビュー（他の人がどう思ってるか）", scores: [0, 0, 0, 3, 1] },
+          { text: "他の商品との比較表", scores: [0, 1, 1, 0, 3] }
+        ]
+      },
+      {
+        q: "スマホの通知。一番先に開くのは？",
+        img: "img/q04.png",
+        a: [
+          { text: "Instagram / TikTok", scores: [3, 0, 0, 0, 0] },
+          { text: "ニュースアプリ / テック系の通知", scores: [0, 2, 0, 0, 3] },
+          { text: "銀行・決済アプリの入出金通知", scores: [0, 0, 3, 0, 0] },
+          { text: "LINE / メッセージ系", scores: [0, 0, 0, 3, 0] },
+          { text: "特に急いで開かない。まとめて見る", scores: [0, 1, 2, 0, 1] }
+        ]
+      },
+      {
+        q: "友達と飯に行った。会話で一番盛り上がるのは？",
+        img: "img/q05.png",
+        a: [
+          { text: "最近見た映画・ドラマ・漫画の話", scores: [3, 0, 0, 1, 0] },
+          { text: "「こういうアプリ便利だよ」系の情報交換", scores: [0, 3, 0, 0, 1] },
+          { text: "「あの株が」「あのポイントが」系のお金の話", scores: [0, 0, 3, 0, 1] },
+          { text: "友達の悩み相談に乗る流れ", scores: [0, 0, 0, 3, 0] },
+          { text: "最近知った雑学やニュースの話", scores: [0, 0, 0, 0, 3] }
+        ]
+      },
+      {
+        q: "仕事中、集中が切れた。無意識にやることは？",
+        img: "img/q06.png",
+        a: [
+          { text: "SNSを開いてフィードをスクロール", scores: [3, 0, 0, 0, 0] },
+          { text: "ブックマークしてたツールや記事を見る", scores: [0, 3, 0, 0, 1] },
+          { text: "ネットバンキングの残高チェック", scores: [0, 0, 3, 0, 0] },
+          { text: "誰かにLINEする", scores: [0, 0, 0, 3, 0] },
+          { text: "ゲームするか漫画を読む", scores: [1, 0, 1, 0, 2] }
+        ]
+      },
+      {
+        q: "引っ越し先を選ぶとき、一番気にするのは？",
+        img: "img/q07.png",
+        a: [
+          { text: "部屋の見た目・内装のおしゃれさ", scores: [3, 0, 0, 0, 0] },
+          { text: "ネット回線の速度と設備", scores: [0, 3, 0, 0, 1] },
+          { text: "家賃と初期費用のコスパ", scores: [0, 0, 3, 0, 0] },
+          { text: "周辺の人間関係や治安", scores: [0, 0, 0, 3, 0] },
+          { text: "駅・スーパー・病院の位置関係をGoogleマップで調べまくる", scores: [0, 0, 1, 0, 3] }
+        ]
+      },
+      {
+        q: "本屋で30分暇つぶし。足が向くのは？",
+        img: "img/q08.png",
+        a: [
+          { text: "写真集・デザイン・ファッション誌", scores: [3, 0, 0, 0, 0] },
+          { text: "ガジェット・PC・プログラミング系", scores: [0, 3, 0, 0, 1] },
+          { text: "投資・ビジネス・お金の本", scores: [0, 0, 3, 0, 1] },
+          { text: "自己啓発・心理学・コミュニケーション系", scores: [0, 0, 0, 3, 0] },
+          { text: "漫画コーナー or 特に決めずにブラブラ", scores: [1, 0, 1, 0, 2] }
+        ]
+      },
+      {
+        q: "「月5万稼げ」と言われた。最初に思うことは？",
+        img: "img/q09.png",
+        a: [
+          { text: "何か作って売れないかな", scores: [3, 1, 0, 0, 0] },
+          { text: "自動で稼ぐ仕組みを作りたい", scores: [0, 3, 2, 0, 0] },
+          { text: "元手ゼロで損しない方法は？", scores: [0, 0, 3, 0, 1] },
+          { text: "自分の経験で教えられることあるかも", scores: [0, 0, 0, 3, 0] },
+          { text: "まず稼いでる人の情報を集めるところから", scores: [0, 0, 1, 0, 3] }
+        ]
+      },
+      {
+        q: "人から言われて一番嬉しい言葉は？",
+        img: "img/q10.png",
+        a: [
+          { text: "「センスいいね」", scores: [3, 0, 0, 0, 0] },
+          { text: "「よくそんなこと思いつくね」", scores: [1, 3, 0, 0, 1] },
+          { text: "「しっかりしてるね」「堅実だね」", scores: [0, 0, 3, 0, 0] },
+          { text: "「話しやすい」「相談してよかった」", scores: [0, 0, 0, 3, 0] },
+          { text: "「よくそんなこと知ってるね」", scores: [0, 0, 0, 0, 3] }
+        ]
+      },
+      {
+        q: "チームで何かやるとき、自然となる役割は？",
+        img: "img/q11.png",
+        a: [
+          { text: "アイデア出し・企画担当", scores: [3, 1, 0, 0, 0] },
+          { text: "環境整備・ツール準備担当", scores: [0, 3, 1, 0, 0] },
+          { text: "予算管理・スケジュール管理", scores: [0, 0, 3, 0, 1] },
+          { text: "みんなの意見をまとめる調整役", scores: [0, 0, 0, 3, 0] },
+          { text: "情報収集して資料を作る人", scores: [0, 0, 0, 0, 3] }
+        ]
+      },
+      {
+        q: "ミスを指摘された。最初にすることは？",
+        img: "img/q12.png",
+        a: [
+          { text: "悔しくてもっと良いものを作り直す", scores: [3, 1, 0, 0, 0] },
+          { text: "原因を特定して再発防止を考える", scores: [0, 3, 1, 0, 1] },
+          { text: "失った時間とコストを計算する", scores: [0, 0, 3, 0, 1] },
+          { text: "まず相手に謝って関係を修復する", scores: [0, 0, 0, 3, 0] },
+          { text: "同じミスの事例を調べて分析する", scores: [0, 0, 0, 0, 3] }
+        ]
+      },
+      {
+        q: "1万円もらった。使い道は？",
+        img: "img/q13.png",
+        a: [
+          { text: "前から欲しかった趣味のもの", scores: [3, 0, 0, 0, 0] },
+          { text: "新しいガジェットやサブスク", scores: [0, 3, 0, 0, 1] },
+          { text: "貯金 or 投資に回す", scores: [0, 0, 3, 0, 0] },
+          { text: "誰かへのプレゼントか食事をおごる", scores: [0, 0, 0, 3, 0] },
+          { text: "本を何冊か買う", scores: [0, 0, 0, 0, 3] }
+        ]
+      },
+      {
+        q: "寝る前のスマホタイム。何してる？",
+        img: "img/q14.png",
+        a: [
+          { text: "SNSかショート動画を延々見てる", scores: [3, 0, 0, 0, 0] },
+          { text: "明日使うアプリやツールの設定", scores: [0, 3, 1, 0, 0] },
+          { text: "家計簿アプリか投資アプリのチェック", scores: [0, 0, 3, 0, 0] },
+          { text: "誰かとLINEのやり取り", scores: [0, 0, 0, 3, 0] },
+          { text: "ゲームか漫画アプリ", scores: [1, 0, 1, 0, 2] }
+        ]
+      },
+      {
+        q: "正直、自分の弱点だと思うのは？",
+        img: "img/q15.png",
+        a: [
+          { text: "飽きっぽい。続かない", scores: [3, 0, 0, 0, 0] },
+          { text: "凝りすぎて時間がかかる", scores: [0, 3, 0, 0, 1] },
+          { text: "石橋を叩きすぎて動けない", scores: [0, 0, 3, 0, 1] },
+          { text: "人の顔色を気にしすぎる", scores: [0, 0, 0, 3, 0] },
+          { text: "考えすぎて手が動かない", scores: [0, 1, 0, 0, 3] }
+        ]
+      }
+    ];
+
+    const typeData = [
+      {
+        name: "コンテンツクリエイター型",
+        img: "img/r01.png",
+        tagline: "作ったものが、あなたの代わりに24時間働く。",
+        pattern: "スマホで気になった写真や動画をすぐ保存する。「これ自分ならこう撮るな」と無意識に考えている。SNSを見ているようで、実はインプットとアウトプットの境界が曖昧。表現欲求が行動のエンジンになっている。他人が「消費」しているものを、あなたは「素材」として見ている。",
+        strengths: [
+          "アイデアを具体的な形にするスピードが速い",
+          "ビジュアルや言葉で人の感情を動かせる",
+          "AIツール（画像生成・動画編集）との相性が良く量産できる",
+          "SNSのアルゴリズムに「量」で乗れるタイプ"
+        ],
+        pitfalls: [
+          "「作る楽しさ」に溺れて、売る・届ける工程を後回しにする（完成率100%、販売率0%問題）",
+          "完璧主義が出て公開ボタンを押せない（80点で出すのが最適解なのに120点を目指す）",
+          "他人の作品と比較して自信をなくす「比較地獄」に陥りやすい",
+          "マネタイズの設計を後回しにして「趣味の延長」で終わるリスクが高い"
+        ],
+        firstStep: "まずCanvaかCapCutで1つ作品を作り、今日中にSNSに投稿しろ。クオリティは無視。「公開する筋肉」を鍛えることが最優先。",
+        jobs: ["AI画像・動画の販売（ストックフォト/Etsy）", "SNS運用代行", "ブログ・note・電子書籍の販売", "Youtubeショート・TikTokコンテンツ制作"]
+      },
+      {
+        name: "ツールビルダー型",
+        img: "img/r02.png",
+        tagline: "不便を見つけたら、仕組みで潰す。",
+        pattern: "新しいアプリやサービスを触ると、使い方より先に「どう作ってるんだろう」が気になる。設定画面を開くのが好き。人の「面倒くさい」に敏感で、「自動化できるのに」と思うことが多い。手を動かして「動くもの」を作る行為そのものに快感を覚える。",
+        strengths: [
+          "問題を構造的に捉えてシステムで解決できる",
+          "AIコーディングツールで非エンジニアでもプロダクトが作れる時代に最適",
+          "一度作ったものが長期間価値を生み続ける",
+          "技術の進歩を「脅威」ではなく「武器」として取り込める"
+        ],
+        pitfalls: [
+          "「作ること」自体が目的化して、誰も使わないものを作る（技術の自己満足問題）",
+          "完成度80%から先の「あと20%」に異常に時間をかける（過剰品質バイアス）",
+          "ユーザーの声を聞かずに機能を増やし続ける「機能肥大化」の罠",
+          "「もっと良い技術がある」と乗り換え続けて何も完成しない"
+        ],
+        firstStep: "自分が毎日やっている繰り返し作業を1つ選び、AIコーディングツールで自動化スクリプトを作れ。完璧じゃなくていい。「動くもの」を今週中に。",
+        jobs: ["AIツール開発・販売", "業務自動化の受託", "Chrome拡張やWebアプリの公開", "ノーコード/ローコード開発の受託"]
+      },
+      {
+        name: "ストック構築型",
+        img: "img/r03.png",
+        tagline: "仕組みを作って、時間を味方につける。",
+        pattern: "ポイント還元率やクーポンが気になる。「効率」「コスパ」という言葉に反応する。短期の爆発力より、じわじわ積み上がる安心感を好む。スプレッドシートで何かを管理するのが好き。リスクを取る前に必ず「最悪のケース」を想定する。",
+        strengths: [
+          "リスクとリターンを冷静に計算できる",
+          "地味な作業をコツコツ続ける持続力がある",
+          "数字で判断できるので感情に振り回されない",
+          "長期的な視点で「複利」的に資産を積み上げられる"
+        ],
+        pitfalls: [
+          "「準備」が長すぎて永遠にスタートしない（分析麻痺）",
+          "効率を追い求めすぎて、人間的な魅力や差別化を見失う",
+          "損失回避が強すぎて、必要なリスクすら取れない（機会損失は見えにくい）",
+          "「仕組み化」にこだわりすぎて、市場の変化に対応できなくなる"
+        ],
+        firstStep: "まずは1つのプラットフォーム（note/Brain/Udemy）にアカウントを作り、最小限のコンテンツを1つ出せ。収益化の設計は後でいい。「置く場所」を先に確保しろ。",
+        jobs: ["アフィリエイト・ブログ運営", "デジタルコンテンツの自動販売", "コンテンツSEO・広告収入モデル", "テンプレート・素材の販売"]
+      },
+      {
+        name: "コンサル・メンター型",
+        img: "img/r04.png",
+        tagline: "あなたの「当たり前」が、誰かの「お金を払いたい知識」。",
+        pattern: "人から相談されることが多い。話を聞きながら「この人が本当に困ってるのはここだな」と見抜ける。自分の経験を語るとき、相手の目が変わる瞬間がある。「ありがとう」と言われることが何よりのガソリン。",
+        strengths: [
+          "信頼を短時間で構築できるコミュニケーション力",
+          "「半歩先の経験」を価値に変換できる",
+          "初期費用ゼロ、在庫ゼロで始められる",
+          "口コミで自然にクライアントが増える好循環を作れる"
+        ],
+        pitfalls: [
+          "「無料で教えすぎる」クセがあり、マネタイズの壁を超えられない（善意の搾取問題）",
+          "自分の経験に固執して、相手のニーズとズレることがある",
+          "「自分の時間=商品」なので、労働集約型から抜け出せない（スケールの天井）",
+          "相手に合わせすぎて自分の方向性を見失う「カメレオン問題」"
+        ],
+        firstStep: "自分が過去に乗り越えた「困りごと」を3つ書き出せ。その中で最も人に聞かれるテーマで、X（Twitter）に1スレッド書け。反応がある=ニーズがある。",
+        jobs: ["オンライン相談・コーチング", "コミュニティ運営", "SNSでの情報発信+個別コンサル", "ワークショップ・セミナー開催"]
+      },
+      {
+        name: "リサーチャー・分析型",
+        img: "img/r05.png",
+        tagline: "調べる力は、そのまま武器になる。",
+        pattern: "気になったことは納得するまで調べないと気が済まない。Wikipediaを開くと30分消える。「比較表」を作るのが好き。人に説明するとき、つい背景情報から話し始める。情報を整理して構造化する作業に没頭できる。",
+        strengths: [
+          "情報の海から本質を見つけ出す目利き力",
+          "調査結果を構造化してわかりやすく伝えられる",
+          "AIリサーチツールとの相性が抜群に良い",
+          "「深さ」で差別化でき、浅い情報に埋もれない"
+        ],
+        pitfalls: [
+          "調べることが目的化して、アウトプットに繋がらない（インプット中毒）",
+          "「もう少し調べてから」が口癖で、行動が慢性的に遅れる",
+          "完璧な調査を目指すあまり、80%の段階で出せば十分なのに公開できない",
+          "「知ってる」と「できる」の間にある溝を甘く見がち"
+        ],
+        firstStep: "今週「調べたこと」を1つ選び、800字以内のnote記事にまとめて公開しろ。完璧な記事じゃなくていい。「調べたことを人に渡す」習慣を作ることが最初の一歩。",
+        jobs: ["リサーチ・市場調査の受託", "データ分析レポートの作成", "専門ジャンルのレビュー・比較記事", "競合分析・トレンドレポートの販売"]
+      }
+    ];
+
+    // --- App State ---
+    let current = 0;
+    const scores = [0, 0, 0, 0, 0]; // creator, builder, stock, consul, researcher
+    const answerHistory = []; // stores chosen index per question for back navigation
+
+    const startScreen = document.getElementById('startScreen');
+    const progressWrap = document.getElementById('progressWrap');
+    const quiz = document.getElementById('quiz');
+    const result = document.getElementById('result');
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+
+    document.getElementById('btnStart').addEventListener('click', () => {
+      startScreen.style.display = 'none';
+      progressWrap.classList.add('active');
+      quiz.classList.add('active');
+      renderQuestion();
+    });
+
+    function renderQuestion() {
+      if (current >= questions.length) {
+        showResult();
+        return;
+      }
+
+      const q = questions[current];
+      const pct = (current / questions.length) * 100;
+      progressFill.style.width = pct + '%';
+      progressText.textContent = 'Q' + (current + 1) + ' / ' + questions.length;
+
+      var imgHtml = q.img ? '<img class="question-img" src="' + q.img + '" alt="">' : '';
+
+      var backHtml = '';
+      if (current > 0) {
+        backHtml = '<button class="btn-back" id="btnBack"><svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>前の質問に戻る</button>';
+      }
+
+      quiz.innerHTML =
+        imgHtml +
+        '<div class="question-text">' + q.q + '</div>' +
+        '<div class="choices">' +
+        q.a.map(function(a, i) {
+          return '<button class="choice" data-idx="' + i + '">' + a.text + '</button>';
+        }).join('') +
+        '</div>' +
+        backHtml;
+
+      quiz.querySelectorAll('.choice').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var idx = parseInt(btn.dataset.idx);
+          q.a[idx].scores.forEach(function(s, j) { scores[j] += s; });
+          answerHistory.push(idx);
+          current++;
+          renderQuestion();
+        });
+      });
+
+      var backBtn = document.getElementById('btnBack');
+      if (backBtn) {
+        backBtn.addEventListener('click', function() {
+          current--;
+          var prevIdx = answerHistory.pop();
+          var prevQ = questions[current];
+          prevQ.a[prevIdx].scores.forEach(function(s, j) { scores[j] -= s; });
+          renderQuestion();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+      }
+    }
+
+    function showResult() {
+      quiz.classList.remove('active');
+      progressFill.style.width = '100%';
+      progressText.textContent = '診断完了';
+
+      var maxIdx = 0;
+      var maxVal = scores[0];
+      for (var i = 1; i < scores.length; i++) {
+        if (scores[i] > maxVal) { maxVal = scores[i]; maxIdx = i; }
+      }
+
+      var t = typeData[maxIdx];
+      var totalMax = Math.max.apply(null, scores);
+      if (totalMax === 0) totalMax = 1;
+
+      var typeNames = [
+        'コンテンツクリエイター',
+        'ツールビルダー',
+        'ストック構築',
+        'コンサル・メンター',
+        'リサーチャー・分析'
+      ];
+
+      var html = '';
+      html += '<div class="result-label">YOUR SIDE JOB TYPE</div>';
+      if (t.img) {
+        html += '<img class="result-img" src="' + t.img + '" alt="">';
+      }
+      html += '<div class="result-type">' + t.name + '</div>';
+      html += '<div class="result-tagline">' + t.tagline + '</div>';
+
+      html += '<div class="result-section">';
+      html += '<div class="result-section-title">あなたの行動パターン</div>';
+      html += '<p>' + t.pattern + '</p>';
+      html += '</div>';
+
+      html += '<div class="result-section">';
+      html += '<div class="result-section-title">強み</div>';
+      html += '<ul>' + t.strengths.map(function(s) { return '<li>' + s + '</li>'; }).join('') + '</ul>';
+      html += '</div>';
+
+      html += '<div class="result-section">';
+      html += '<div class="result-section-title">落とし穴</div>';
+      html += '<ul>' + t.pitfalls.map(function(s) { return '<li>' + s + '</li>'; }).join('') + '</ul>';
+      html += '</div>';
+
+      html += '<div class="result-section">';
+      html += '<div class="result-section-title">最初の一歩</div>';
+      html += '<p>' + t.firstStep + '</p>';
+      html += '</div>';
+
+      html += '<div class="result-section">';
+      html += '<div class="result-section-title">相性の良い副業</div>';
+      html += '<ul>' + t.jobs.map(function(s) { return '<li>' + s + '</li>'; }).join('') + '</ul>';
+      html += '</div>';
+
+      html += '<div class="result-section">';
+      html += '<div class="result-section-title">スコア分布</div>';
+      html += '<div class="score-bars">';
+      for (var i = 0; i < 5; i++) {
+        var pct = Math.round((scores[i] / totalMax) * 100);
+        html += '<div class="score-row">';
+        html += '<div class="score-label">' + typeNames[i] + '</div>';
+        html += '<div class="score-track"><div class="score-bar" style="width:0%" data-w="' + pct + '%"></div></div>';
+        html += '<div class="score-val">' + pct + '%</div>';
+        html += '</div>';
+      }
+      html += '</div></div>';
+
+      html += '<div class="result-actions">';
+      html += '<button class="btn-share" id="btnShare">Xでシェア</button>';
+      html += '<button class="btn-retry" id="btnRetry">もう一度</button>';
+      html += '</div>';
+
+      document.getElementById('resultCard').innerHTML = html;
+      result.classList.add('active');
+
+      // Animate bars
+      setTimeout(function() {
+        document.querySelectorAll('.score-bar').forEach(function(bar) {
+          bar.style.width = bar.dataset.w;
+        });
+      }, 100);
+
+      // Share button
+      document.getElementById('btnShare').addEventListener('click', function() {
+        var text = '副業適性診断の結果は「' + t.name + '」でした！\n' + t.tagline + '\n\nダイスケマンの秘密倉庫で診断 →';
+        window.open('https://x.com/intent/tweet?text=' + encodeURIComponent(text), '_blank');
+      });
+
+      // Retry button
+      document.getElementById('btnRetry').addEventListener('click', function() {
+        current = 0;
+        answerHistory.length = 0;
+        for (var i = 0; i < scores.length; i++) scores[i] = 0;
+        result.classList.remove('active');
+        quiz.classList.add('active');
+        progressWrap.classList.add('active');
+        renderQuestion();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
+  </script>
+
+</body>
+</html>
