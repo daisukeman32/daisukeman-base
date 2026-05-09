@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>音声トリミングツール</title>
+<meta name="description" content="音声ファイルを読み込み、波形を見ながら範囲を選択してトリミング。ブラウザ内で完結、サーバーへのアップロードなし。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg-primary: #060606;
+  --bg-secondary: #0f0f0f;
+  --text-primary: #eee;
+  --text-sub: #9a9a9a;
+  --border: #181818;
+  --btn-bg: #fff;
+  --btn-text: #000;
+  --input-bg: #0a0a0a;
+  --wave-color: #ccc;
+  --selection-color: rgba(255,255,255,0.15);
+  --playhead-color: #fff;
+  --drop-border: #444;
+}
+
+[data-theme="light"] {
+  --bg-primary: #f5f3f0;
+  --bg-secondary: #fff;
+  --text-primary: #1a1a1a;
+  --text-sub: #666;
+  --border: #e0ddd8;
+  --btn-bg: #1a1a1a;
+  --btn-text: #fff;
+  --input-bg: #fff;
+  --wave-color: #333;
+  --selection-color: rgba(0,0,0,0.1);
+  --playhead-color: #000;
+  --drop-border: #bbb;
+}
+
+body {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: background 0.3s, color 0.3s;
+}
+
+a { color: var(--text-sub); text-decoration: none; }
+a:hover { color: var(--text-primary); }
+
+.container {
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Nav */
+nav {
+  padding: 20px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+nav a { font-size: 14px; }
+.theme-toggle {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-sub);
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  transition: all 0.3s;
+}
+.theme-toggle:hover { color: var(--text-primary); border-color: var(--text-sub); }
+
+/* Main */
+main {
+  flex: 1;
+  padding: 20px 0 60px;
+}
+
+h1 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.subtitle {
+  color: var(--text-sub);
+  font-size: 14px;
+  margin-bottom: 32px;
+}
+
+/* Drop zone */
+.drop-zone {
+  border: 2px dashed var(--drop-border);
+  border-radius: 12px;
+  padding: 80px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-bottom: 24px;
+}
+.drop-zone:hover,
+.drop-zone.dragover {
+  border-color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+.drop-zone p {
+  color: var(--text-sub);
+  font-size: 15px;
+  margin-bottom: 8px;
+}
+.drop-zone .formats {
+  font-size: 12px;
+  color: var(--text-sub);
+  opacity: 0.6;
+}
+.drop-zone input[type="file"] { display: none; }
+
+/* File info */
+.file-info {
+  display: none;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: var(--text-sub);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.file-info .filename {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.file-info .reset-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-sub);
+  padding: 4px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+}
+.file-info .reset-btn:hover { color: var(--text-primary); border-color: var(--text-sub); }
+
+/* Waveform */
+.waveform-wrapper {
+  display: none;
+  position: relative;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  cursor: crosshair;
+}
+.waveform-wrapper canvas {
+  display: block;
+  width: 100%;
+  height: 160px;
+}
+
+/* Time display */
+.time-display {
+  display: none;
+  justify-content: center;
+  align-items: center;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  margin-bottom: 20px;
+  font-variant-numeric: tabular-nums;
+}
+.time-display .current { color: var(--text-primary); }
+.time-display .separator { color: var(--text-sub); margin: 0 8px; }
+.time-display .total { color: var(--text-sub); }
+
+/* Controls */
+.controls {
+  display: none;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+.btn {
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  transition: opacity 0.2s;
+}
+.btn:hover { opacity: 0.85; }
+.btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.btn-outline {
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+.btn-outline:hover { border-color: var(--text-sub); opacity: 1; }
+
+/* Range inputs */
+.range-inputs {
+  display: none;
+  gap: 16px;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.range-inputs label {
+  font-size: 13px;
+  color: var(--text-sub);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.range-inputs input[type="number"] {
+  width: 90px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--input-bg);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+}
+.range-inputs input[type="number"]:focus {
+  outline: none;
+  border-color: var(--text-sub);
+}
+
+/* Footer */
+footer {
+  padding: 24px 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-sub);
+  opacity: 0.6;
+  border-top: 1px solid var(--border);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  h1 { font-size: 18px; }
+  .time-display { font-size: 22px; }
+  .drop-zone { padding: 50px 16px; }
+  .controls { gap: 8px; }
+  .btn { padding: 8px 14px; font-size: 13px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <nav>
+    <a href="../">&larr; 秘密倉庫に戻る</a>
+    <button class="theme-toggle" id="themeToggle">Light</button>
+  </nav>
+
+  <main>
+    <h1>音声トリミングツール</h1>
+    <p class="subtitle">波形を見ながら音声を切り出し</p>
+
+    <div class="drop-zone" id="dropZone">
+      <p>ここに音声ファイルをドロップ、またはクリックして選択</p>
+      <span class="formats">mp3 / wav / ogg / m4a / aac</span>
+      <input type="file" id="fileInput" accept=".mp3,.wav,.ogg,.m4a,.aac,audio/*">
+    </div>
+
+    <div class="file-info" id="fileInfo">
+      <div><span class="filename" id="fileName"></span> <span id="fileDuration"></span></div>
+      <button class="reset-btn" id="resetBtn">別のファイルを選択</button>
+    </div>
+
+    <div class="waveform-wrapper" id="waveformWrapper">
+      <canvas id="waveformCanvas"></canvas>
+    </div>
+
+    <div class="time-display" id="timeDisplay">
+      <span class="current" id="currentTime">00:00.0</span>
+      <span class="separator">/</span>
+      <span class="total" id="totalTime">00:00.0</span>
+    </div>
+
+    <div class="controls" id="controls">
+      <button class="btn" id="playPauseBtn">再生</button>
+      <button class="btn btn-outline" id="playSelectionBtn" disabled>選択範囲を再生</button>
+      <button class="btn" id="trimBtn" disabled>トリミングしてダウンロード</button>
+    </div>
+
+    <div class="range-inputs" id="rangeInputs">
+      <label>開始 <input type="number" id="startInput" step="0.1" min="0" value="0"> 秒</label>
+      <label>終了 <input type="number" id="endInput" step="0.1" min="0" value="0"> 秒</label>
+    </div>
+  </main>
+
+  <footer>
+    音声ファイルはブラウザ内で処理されます。サーバーへのアップロードは行いません。
+  </footer>
+</div>
+
+<script>
+(() => {
+  // Theme
+  const themeToggle = document.getElementById('themeToggle');
+  const saved = localStorage.getItem('audio-trim-theme');
+  if (saved === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    themeToggle.textContent = 'Dark';
+  }
+  themeToggle.addEventListener('click', () => {
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    document.documentElement.setAttribute('data-theme', isLight ? '' : 'light');
+    themeToggle.textContent = isLight ? 'Light' : 'Dark';
+    localStorage.setItem('audio-trim-theme', isLight ? 'dark' : 'light');
+    if (audioBuffer) drawWaveform();
+  });
+
+  // Elements
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+  const fileInfo = document.getElementById('fileInfo');
+  const fileName = document.getElementById('fileName');
+  const fileDuration = document.getElementById('fileDuration');
+  const resetBtn = document.getElementById('resetBtn');
+  const waveformWrapper = document.getElementById('waveformWrapper');
+  const canvas = document.getElementById('waveformCanvas');
+  const ctx = canvas.getContext('2d');
+  const timeDisplay = document.getElementById('timeDisplay');
+  const currentTimeEl = document.getElementById('currentTime');
+  const totalTimeEl = document.getElementById('totalTime');
+  const controls = document.getElementById('controls');
+  const playPauseBtn = document.getElementById('playPauseBtn');
+  const playSelectionBtn = document.getElementById('playSelectionBtn');
+  const trimBtn = document.getElementById('trimBtn');
+  const rangeInputs = document.getElementById('rangeInputs');
+  const startInput = document.getElementById('startInput');
+  const endInput = document.getElementById('endInput');
+
+  // State
+  let audioCtx = null;
+  let audioBuffer = null;
+  let sourceNode = null;
+  let isPlaying = false;
+  let playStartTime = 0;
+  let playOffset = 0;
+  let selectionStart = -1;
+  let selectionEnd = -1;
+  let isDragging = false;
+  let dragStartX = 0;
+  let animFrameId = null;
+  let playEndLimit = -1; // for selection playback
+
+  function getAudioCtx() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return audioCtx;
+  }
+
+  // Format time
+  function fmt(sec) {
+    if (!isFinite(sec) || sec < 0) sec = 0;
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return String(m).padStart(2, '0') + ':' + s.toFixed(1).padStart(4, '0');
+  }
+
+  // File handling
+  dropZone.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    if (e.dataTransfer.files.length) loadFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener('change', () => { if (fileInput.files.length) loadFile(fileInput.files[0]); });
+  resetBtn.addEventListener('click', resetAll);
+
+  function resetAll() {
+    stopPlayback();
+    audioBuffer = null;
+    selectionStart = -1;
+    selectionEnd = -1;
+    dropZone.style.display = '';
+    fileInfo.style.display = 'none';
+    waveformWrapper.style.display = 'none';
+    timeDisplay.style.display = 'none';
+    controls.style.display = 'none';
+    rangeInputs.style.display = 'none';
+    fileInput.value = '';
+    updateSelectionButtons();
+  }
+
+  async function loadFile(file) {
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!['mp3','wav','ogg','m4a','aac'].includes(ext) && !file.type.startsWith('audio/')) {
+      alert('対応形式: mp3, wav, ogg, m4a, aac');
+      return;
+    }
+
+    const actx = getAudioCtx();
+    if (actx.state === 'suspended') await actx.resume();
+
+    try {
+      const arrayBuf = await file.arrayBuffer();
+      audioBuffer = await actx.decodeAudioData(arrayBuf);
+    } catch (e) {
+      alert('音声ファイルの読み込みに失敗しました。');
+      console.error(e);
+      return;
+    }
+
+    fileName.textContent = file.name;
+    fileDuration.textContent = '(' + fmt(audioBuffer.duration) + ')';
+    totalTimeEl.textContent = fmt(audioBuffer.duration);
+    currentTimeEl.textContent = fmt(0);
+    startInput.max = audioBuffer.duration.toFixed(1);
+    endInput.max = audioBuffer.duration.toFixed(1);
+    startInput.value = '0';
+    endInput.value = audioBuffer.duration.toFixed(1);
+    selectionStart = -1;
+    selectionEnd = -1;
+    playOffset = 0;
+
+    dropZone.style.display = 'none';
+    fileInfo.style.display = 'flex';
+    waveformWrapper.style.display = 'block';
+    timeDisplay.style.display = 'flex';
+    controls.style.display = 'flex';
+    rangeInputs.style.display = 'flex';
+
+    drawWaveform();
+    updateSelectionButtons();
+  }
+
+  // Waveform drawing
+  function drawWaveform() {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.parentElement.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = 160 * dpr;
+    canvas.style.width = rect.width + 'px';
+    canvas.style.height = '160px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const w = rect.width;
+    const h = 160;
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+
+    ctx.clearRect(0, 0, w, h);
+
+    if (!audioBuffer) return;
+
+    const data = audioBuffer.getChannelData(0);
+    const step = Math.ceil(data.length / w);
+    const mid = h / 2;
+
+    ctx.fillStyle = isLight ? '#333' : '#ccc';
+    for (let i = 0; i < w; i++) {
+      let min = 1, max = -1;
+      const start = i * step;
+      for (let j = 0; j < step; j++) {
+        const val = data[start + j] || 0;
+        if (val < min) min = val;
+        if (val > max) max = val;
+      }
+      const topY = mid + min * mid;
+      const botY = mid + max * mid;
+      const barH = Math.max(1, botY - topY);
+      ctx.fillRect(i, topY, 1, barH);
+    }
+
+    // Selection highlight
+    if (selectionStart >= 0 && selectionEnd >= 0 && audioBuffer.duration > 0) {
+      const s = Math.min(selectionStart, selectionEnd);
+      const e = Math.max(selectionStart, selectionEnd);
+      const sx = (s / audioBuffer.duration) * w;
+      const ex = (e / audioBuffer.duration) * w;
+      ctx.fillStyle = isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.15)';
+      ctx.fillRect(sx, 0, ex - sx, h);
+
+      // Selection edges
+      ctx.strokeStyle = isLight ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.3)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(sx, 0); ctx.lineTo(sx, h);
+      ctx.moveTo(ex, 0); ctx.lineTo(ex, h);
+      ctx.stroke();
+    }
+
+    // Playhead
+    const currentPos = getCurrentTime();
+    if (currentPos >= 0 && audioBuffer.duration > 0) {
+      const px = (currentPos / audioBuffer.duration) * w;
+      ctx.strokeStyle = isLight ? '#000' : '#fff';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(px, 0);
+      ctx.lineTo(px, h);
+      ctx.stroke();
+    }
+  }
+
+  function getCurrentTime() {
+    if (isPlaying) {
+      return playOffset + (getAudioCtx().currentTime - playStartTime);
+    }
+    return playOffset;
+  }
+
+  // Animation loop
+  function animate() {
+    if (!audioBuffer) return;
+
+    const ct = getCurrentTime();
+    currentTimeEl.textContent = fmt(ct);
+    drawWaveform();
+
+    if (isPlaying) {
+      // Check end limit (selection playback)
+      if (playEndLimit >= 0 && ct >= playEndLimit) {
+        stopPlayback();
+        playOffset = playEndLimit;
+        currentTimeEl.textContent = fmt(playOffset);
+        drawWaveform();
+        return;
+      }
+      // Check end of file
+      if (ct >= audioBuffer.duration) {
+        stopPlayback();
+        playOffset = 0;
+        currentTimeEl.textContent = fmt(0);
+        drawWaveform();
+        return;
+      }
+      animFrameId = requestAnimationFrame(animate);
+    }
+  }
+
+  // Playback
+  function startPlayback(offset, endLimit) {
+    stopPlayback();
+    const actx = getAudioCtx();
+    sourceNode = actx.createBufferSource();
+    sourceNode.buffer = audioBuffer;
+    sourceNode.connect(actx.destination);
+    playOffset = offset || 0;
+    playEndLimit = endLimit != null ? endLimit : -1;
+    playStartTime = actx.currentTime;
+
+    const dur = playEndLimit >= 0 ? playEndLimit - playOffset : undefined;
+    sourceNode.start(0, playOffset, dur);
+    sourceNode.onended = () => {
+      if (isPlaying) {
+        isPlaying = false;
+        playPauseBtn.textContent = '再生';
+        if (playEndLimit >= 0) {
+          playOffset = playEndLimit;
+        } else {
+          const elapsed = actx.currentTime - playStartTime;
+          playOffset = Math.min(playOffset + elapsed, audioBuffer.duration);
+          if (playOffset >= audioBuffer.duration) playOffset = 0;
+        }
+        playEndLimit = -1;
+        currentTimeEl.textContent = fmt(playOffset);
+        drawWaveform();
+      }
+    };
+    isPlaying = true;
+    playPauseBtn.textContent = '一時停止';
+    animate();
+  }
+
+  function stopPlayback() {
+    if (sourceNode) {
+      try { sourceNode.onended = null; sourceNode.stop(); } catch(e) {}
+      sourceNode = null;
+    }
+    if (isPlaying) {
+      const actx = getAudioCtx();
+      const elapsed = actx.currentTime - playStartTime;
+      playOffset = Math.min(playOffset + elapsed, audioBuffer ? audioBuffer.duration : 0);
+    }
+    isPlaying = false;
+    playEndLimit = -1;
+    playPauseBtn.textContent = '再生';
+    if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
+  }
+
+  playPauseBtn.addEventListener('click', () => {
+    if (!audioBuffer) return;
+    if (isPlaying) {
+      stopPlayback();
+      drawWaveform();
+    } else {
+      if (playOffset >= audioBuffer.duration) playOffset = 0;
+      startPlayback(playOffset);
+    }
+  });
+
+  playSelectionBtn.addEventListener('click', () => {
+    if (!audioBuffer || selectionStart < 0 || selectionEnd < 0) return;
+    const s = Math.min(selectionStart, selectionEnd);
+    const e = Math.max(selectionStart, selectionEnd);
+    startPlayback(s, e);
+  });
+
+  // Waveform interaction
+  function xToTime(x) {
+    const rect = canvas.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (x - rect.left) / rect.width));
+    return ratio * audioBuffer.duration;
+  }
+
+  // Drag modes: 'new' = new selection, 'start' = move start handle, 'end' = move end handle, 'move' = move whole range
+  let dragMode = 'new';
+  let moveOffset = 0;
+
+  function getHandleThreshold() {
+    if (!audioBuffer) return 0;
+    const rect = canvas.getBoundingClientRect();
+    return (audioBuffer.duration / rect.width) * 8; // 8px in time
+  }
+
+  function hitTest(clientX) {
+    if (selectionStart < 0 || selectionEnd < 0) return 'new';
+    const t = xToTime(clientX);
+    const s = Math.min(selectionStart, selectionEnd);
+    const e = Math.max(selectionStart, selectionEnd);
+    const threshold = getHandleThreshold();
+    if (Math.abs(t - s) < threshold) return 'start';
+    if (Math.abs(t - e) < threshold) return 'end';
+    if (t > s && t < e) return 'move';
+    return 'new';
+  }
+
+  function updateCursor(clientX) {
+    const mode = hitTest(clientX);
+    if (mode === 'start' || mode === 'end') {
+      waveformWrapper.style.cursor = 'ew-resize';
+    } else if (mode === 'move') {
+      waveformWrapper.style.cursor = 'grab';
+    } else {
+      waveformWrapper.style.cursor = 'crosshair';
+    }
+  }
+
+  waveformWrapper.addEventListener('mousemove', e => {
+    if (!isDragging && audioBuffer) updateCursor(e.clientX);
+  });
+
+  waveformWrapper.addEventListener('mousedown', e => {
+    if (!audioBuffer) return;
+    e.preventDefault();
+    isDragging = true;
+    dragStartX = e.clientX;
+    dragMode = hitTest(e.clientX);
+    const t = xToTime(e.clientX);
+
+    if (dragMode === 'new') {
+      selectionStart = t;
+      selectionEnd = t;
+    } else if (dragMode === 'move') {
+      waveformWrapper.style.cursor = 'grabbing';
+      moveOffset = t - Math.min(selectionStart, selectionEnd);
+    }
+    updateSelectionInputs();
+    drawWaveform();
+  });
+
+  window.addEventListener('mousemove', e => {
+    if (!isDragging || !audioBuffer) return;
+    const t = xToTime(e.clientX);
+    const dur = audioBuffer.duration;
+
+    if (dragMode === 'new') {
+      selectionEnd = t;
+    } else if (dragMode === 'start') {
+      const e2 = Math.max(selectionStart, selectionEnd);
+      selectionStart = Math.max(0, Math.min(t, e2 - 0.05));
+      selectionEnd = e2;
+    } else if (dragMode === 'end') {
+      const s2 = Math.min(selectionStart, selectionEnd);
+      selectionEnd = Math.min(dur, Math.max(t, s2 + 0.05));
+      selectionStart = s2;
+    } else if (dragMode === 'move') {
+      const s = Math.min(selectionStart, selectionEnd);
+      const e2 = Math.max(selectionStart, selectionEnd);
+      const len = e2 - s;
+      let newS = t - moveOffset;
+      if (newS < 0) newS = 0;
+      if (newS + len > dur) newS = dur - len;
+      selectionStart = newS;
+      selectionEnd = newS + len;
+    }
+    updateSelectionInputs();
+    drawWaveform();
+  });
+
+  window.addEventListener('mouseup', e => {
+    if (!isDragging) return;
+    isDragging = false;
+    waveformWrapper.style.cursor = 'crosshair';
+    if (!audioBuffer) return;
+
+    if (dragMode === 'new' && Math.abs(e.clientX - dragStartX) < 3) {
+      const t = xToTime(e.clientX);
+      selectionStart = -1;
+      selectionEnd = -1;
+      if (isPlaying) {
+        startPlayback(t);
+      } else {
+        playOffset = t;
+        currentTimeEl.textContent = fmt(t);
+      }
+      updateSelectionInputs();
+    }
+
+    // Normalize so start < end
+    if (selectionStart > selectionEnd) {
+      const tmp = selectionStart;
+      selectionStart = selectionEnd;
+      selectionEnd = tmp;
+    }
+
+    updateSelectionButtons();
+    drawWaveform();
+  });
+
+  // Touch support
+  waveformWrapper.addEventListener('touchstart', e => {
+    if (!audioBuffer || !e.touches.length) return;
+    e.preventDefault();
+    isDragging = true;
+    const touch = e.touches[0];
+    dragStartX = touch.clientX;
+    dragMode = hitTest(touch.clientX);
+    const t = xToTime(touch.clientX);
+
+    if (dragMode === 'new') {
+      selectionStart = t;
+      selectionEnd = t;
+    } else if (dragMode === 'move') {
+      moveOffset = t - Math.min(selectionStart, selectionEnd);
+    }
+    updateSelectionInputs();
+    drawWaveform();
+  }, { passive: false });
+
+  window.addEventListener('touchmove', e => {
+    if (!isDragging || !audioBuffer || !e.touches.length) return;
+    const t = xToTime(e.touches[0].clientX);
+    const dur = audioBuffer.duration;
+
+    if (dragMode === 'new') {
+      selectionEnd = t;
+    } else if (dragMode === 'start') {
+      const e2 = Math.max(selectionStart, selectionEnd);
+      selectionStart = Math.max(0, Math.min(t, e2 - 0.05));
+      selectionEnd = e2;
+    } else if (dragMode === 'end') {
+      const s2 = Math.min(selectionStart, selectionEnd);
+      selectionEnd = Math.min(dur, Math.max(t, s2 + 0.05));
+      selectionStart = s2;
+    } else if (dragMode === 'move') {
+      const s = Math.min(selectionStart, selectionEnd);
+      const e2 = Math.max(selectionStart, selectionEnd);
+      const len = e2 - s;
+      let newS = t - moveOffset;
+      if (newS < 0) newS = 0;
+      if (newS + len > dur) newS = dur - len;
+      selectionStart = newS;
+      selectionEnd = newS + len;
+    }
+    updateSelectionInputs();
+    drawWaveform();
+  });
+
+  window.addEventListener('touchend', e => {
+    if (!isDragging) return;
+    isDragging = false;
+    if (!audioBuffer) return;
+    const touch = e.changedTouches[0];
+    if (dragMode === 'new' && Math.abs(touch.clientX - dragStartX) < 3) {
+      const t = xToTime(touch.clientX);
+      selectionStart = -1;
+      selectionEnd = -1;
+      if (isPlaying) {
+        startPlayback(t);
+      } else {
+        playOffset = t;
+        currentTimeEl.textContent = fmt(t);
+      }
+      updateSelectionInputs();
+    }
+    if (selectionStart > selectionEnd) {
+      const tmp = selectionStart;
+      selectionStart = selectionEnd;
+      selectionEnd = tmp;
+    }
+    updateSelectionButtons();
+    drawWaveform();
+  });
+
+  function updateSelectionInputs() {
+    if (selectionStart >= 0 && selectionEnd >= 0) {
+      const s = Math.min(selectionStart, selectionEnd);
+      const e = Math.max(selectionStart, selectionEnd);
+      startInput.value = s.toFixed(1);
+      endInput.value = e.toFixed(1);
+    }
+  }
+
+  function updateSelectionButtons() {
+    const hasSelection = selectionStart >= 0 && selectionEnd >= 0 &&
+      Math.abs(selectionStart - selectionEnd) > 0.01;
+    playSelectionBtn.disabled = !hasSelection;
+    trimBtn.disabled = !hasSelection;
+  }
+
+  // Numeric inputs
+  startInput.addEventListener('change', () => {
+    if (!audioBuffer) return;
+    let v = parseFloat(startInput.value) || 0;
+    v = Math.max(0, Math.min(v, audioBuffer.duration));
+    startInput.value = v.toFixed(1);
+    selectionStart = v;
+    if (selectionEnd < 0) selectionEnd = audioBuffer.duration;
+    if (selectionStart > selectionEnd) {
+      selectionEnd = selectionStart;
+      endInput.value = selectionEnd.toFixed(1);
+    }
+    updateSelectionButtons();
+    drawWaveform();
+  });
+
+  endInput.addEventListener('change', () => {
+    if (!audioBuffer) return;
+    let v = parseFloat(endInput.value) || 0;
+    v = Math.max(0, Math.min(v, audioBuffer.duration));
+    endInput.value = v.toFixed(1);
+    selectionEnd = v;
+    if (selectionStart < 0) selectionStart = 0;
+    if (selectionEnd < selectionStart) {
+      selectionStart = selectionEnd;
+      startInput.value = selectionStart.toFixed(1);
+    }
+    updateSelectionButtons();
+    drawWaveform();
+  });
+
+  // Trim and download
+  trimBtn.addEventListener('click', () => {
+    if (!audioBuffer || selectionStart < 0 || selectionEnd < 0) return;
+    const s = Math.min(selectionStart, selectionEnd);
+    const e = Math.max(selectionStart, selectionEnd);
+    if (e - s < 0.01) return;
+
+    const sampleRate = audioBuffer.sampleRate;
+    const channels = audioBuffer.numberOfChannels;
+    const startSample = Math.floor(s * sampleRate);
+    const endSample = Math.min(Math.floor(e * sampleRate), audioBuffer.length);
+    const length = endSample - startSample;
+
+    if (length <= 0) return;
+
+    // Create WAV
+    const wavBuffer = createWav(audioBuffer, startSample, length, channels, sampleRate);
+    const blob = new Blob([wavBuffer], { type: 'audio/wav' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const baseName = (fileName.textContent || 'audio').replace(/\.[^.]+$/, '');
+    a.href = url;
+    a.download = baseName + '_trimmed.wav';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  function createWav(buffer, startSample, length, channels, sampleRate) {
+    const bytesPerSample = 2; // 16-bit
+    const blockAlign = channels * bytesPerSample;
+    const dataSize = length * blockAlign;
+    const headerSize = 44;
+    const totalSize = headerSize + dataSize;
+    const arr = new ArrayBuffer(totalSize);
+    const view = new DataView(arr);
+
+    // RIFF header
+    writeString(view, 0, 'RIFF');
+    view.setUint32(4, totalSize - 8, true);
+    writeString(view, 8, 'WAVE');
+
+    // fmt chunk
+    writeString(view, 12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true); // PCM
+    view.setUint16(22, channels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * blockAlign, true);
+    view.setUint16(32, blockAlign, true);
+    view.setUint16(34, bytesPerSample * 8, true);
+
+    // data chunk
+    writeString(view, 36, 'data');
+    view.setUint32(40, dataSize, true);
+
+    // Interleave channels and write samples
+    let offset = 44;
+    for (let i = 0; i < length; i++) {
+      for (let ch = 0; ch < channels; ch++) {
+        const sample = buffer.getChannelData(ch)[startSample + i];
+        const clamped = Math.max(-1, Math.min(1, sample));
+        const int16 = clamped < 0 ? clamped * 0x8000 : clamped * 0x7FFF;
+        view.setInt16(offset, int16, true);
+        offset += 2;
+      }
+    }
+
+    return arr;
+  }
+
+  function writeString(view, offset, str) {
+    for (let i = 0; i < str.length; i++) {
+      view.setUint8(offset + i, str.charCodeAt(i));
+    }
+  }
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', e => {
+    if (!audioBuffer) return;
+    if (e.target.tagName === 'INPUT') return;
+    if (e.code === 'Space') {
+      e.preventDefault();
+      playPauseBtn.click();
+    }
+  });
+
+  // Resize redraw
+  window.addEventListener('resize', () => {
+    if (audioBuffer) drawWaveform();
+  });
+})();
+</script>
+</body>
+</html>

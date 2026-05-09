@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ダイスケマンとは | ダイスケマンBASE</title>
+  <meta name="description" content="40代で脱サラしたおじさんのリアル。ツール開発、AI動画、コンサル。等身大の挑戦を発信中。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+JP:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --font: 'Inter', 'Noto Sans JP', -apple-system, sans-serif;
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+      --accent: #c97b5b;
+      --accent-light: #e09070;
+      --max-w: 900px;
+      --pad: 40px;
+    }
+
+    [data-theme="dark"] {
+      --bg: #060606;
+      --bg-card: #0f0f0f;
+      --border: #181818;
+      --text: #eee;
+      --text-sub: #9a9a9a;
+      --text-muted: #6a6a6a;
+    }
+
+    [data-theme="light"] {
+      --bg: #f5f3f0;
+      --bg-card: #fff;
+      --border: #e0dbd4;
+      --text: #1a1a1a;
+      --text-sub: #666;
+      --text-muted: #aaa;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.9;
+      -webkit-font-smoothing: antialiased;
+      transition: background 0.5s var(--ease), color 0.5s var(--ease);
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(6,6,6,0.92);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      transition: background 0.5s var(--ease), border-color 0.5s var(--ease);
+    }
+
+    [data-theme="light"] nav { background: rgba(245,243,240,0.94); }
+
+    .nav-inner {
+      max-width: var(--max-w); margin: 0 auto;
+      padding: 0 var(--pad); height: 56px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .nav-back {
+      font-size: 0.72rem; font-weight: 500;
+      color: var(--text-sub); letter-spacing: 0.05em;
+      display: flex; align-items: center; gap: 8px;
+      transition: color 0.2s; text-decoration: none;
+    }
+    .nav-back:hover { color: var(--text); }
+
+    .nav-back svg {
+      width: 14px; height: 14px; stroke: currentColor; fill: none;
+      stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+    }
+
+    .theme-toggle {
+      width: 32px; height: 32px; border-radius: 6px;
+      border: 1px solid var(--border); background: transparent;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all 0.3s; color: var(--text-muted);
+    }
+    .theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+    .theme-toggle svg {
+      width: 14px; height: 14px; stroke: currentColor; fill: none;
+      stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+    }
+    .theme-toggle .icon-sun { display: none; }
+    .theme-toggle .icon-moon { display: block; }
+    [data-theme="light"] .theme-toggle .icon-sun { display: block; }
+    [data-theme="light"] .theme-toggle .icon-moon { display: none; }
+
+    /* MAIN */
+    .main {
+      max-width: var(--max-w); margin: 0 auto;
+      padding: 100px var(--pad) 60px;
+    }
+
+    .page-label {
+      font-size: 0.6rem; font-weight: 600;
+      letter-spacing: 0.35em; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 20px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .page-label::before {
+      content: ''; width: 20px; height: 1px; background: var(--accent);
+    }
+
+    .page-title {
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 800; letter-spacing: -0.02em;
+      line-height: 1.4; margin-bottom: 12px;
+    }
+    .page-title .accent { color: var(--accent); }
+
+    .page-desc {
+      font-size: 0.88rem; color: var(--text-sub);
+      line-height: 2; margin-bottom: 48px;
+      transition: color 0.5s var(--ease);
+    }
+
+    /* VIDEO SECTION */
+    .video-section {
+      margin-bottom: 48px;
+    }
+
+    .video-section-title {
+      font-size: 0.7rem; font-weight: 700;
+      letter-spacing: 0.15em; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      transition: color 0.5s var(--ease), border-color 0.5s var(--ease);
+    }
+
+    .video-wrapper {
+      position: relative;
+      padding-bottom: 56.25%; /* 16:9 */
+      height: 0;
+      overflow: hidden;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      margin-bottom: 12px;
+      transition: border-color 0.5s var(--ease);
+    }
+
+    .video-wrapper iframe {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      border: none;
+    }
+
+    .video-title {
+      font-size: 0.92rem; font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .video-meta {
+      font-size: 0.72rem; color: var(--text-muted);
+      transition: color 0.5s var(--ease);
+    }
+
+    /* VIDEO LIST */
+    .video-list {
+      display: flex; flex-direction: column;
+      gap: 24px;
+      margin-top: 24px;
+    }
+
+    .video-card {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .video-card .video-wrapper {
+      padding-bottom: 0;
+      height: 158px; /* 280 * 9/16 */
+      margin-bottom: 0;
+    }
+
+    .video-card-info {
+      padding-top: 4px;
+    }
+
+    .video-card-title {
+      font-size: 0.88rem; font-weight: 600;
+      margin-bottom: 6px;
+      line-height: 1.5;
+    }
+
+    .video-card-desc {
+      font-size: 0.78rem; color: var(--text-sub);
+      line-height: 1.8;
+      transition: color 0.5s var(--ease);
+    }
+
+    .video-card-meta {
+      font-size: 0.68rem; color: var(--text-muted);
+      margin-top: 8px;
+      transition: color 0.5s var(--ease);
+    }
+
+    /* FOOTER */
+    .page-footer {
+      max-width: var(--max-w); margin: 0 auto;
+      padding: 32px var(--pad);
+      border-top: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+      transition: border-color 0.5s var(--ease);
+    }
+    .page-footer span {
+      font-size: 0.6rem; color: var(--text-muted);
+      transition: color 0.5s var(--ease);
+    }
+
+    @media (max-width: 640px) {
+      :root { --pad: 20px; }
+      .video-card { grid-template-columns: 1fr; }
+      .video-card .video-wrapper { height: 0; padding-bottom: 56.25%; }
+      .page-footer { flex-direction: column; gap: 8px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="nav-inner">
+      <a href="../index.html" class="nav-back">
+        <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        DAISUKEMAN BASE
+      </a>
+      <button class="theme-toggle" id="themeToggle" aria-label="テーマ切替">
+        <svg class="icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      </button>
+    </div>
+  </nav>
+
+  <div class="main">
+    <p class="page-label">About Me</p>
+    <h1 class="page-title"><span class="accent">ダイスケマン</span>とは</h1>
+    <p class="page-desc">
+      40代で脱サラしたおじさんのリアル。<br>
+      家族がいる。退路がない。でも一歩踏み出した。<br>
+      同じ境遇の人に届けたい。
+    </p>
+
+    <!-- 最新動画（メイン表示） -->
+    <div class="video-section">
+      <div class="video-section-title">Latest</div>
+      <div class="video-wrapper">
+        <iframe src="https://www.youtube.com/embed/SqX3nCkGDOA" allowfullscreen></iframe>
+      </div>
+      <div class="video-title">ダイスケマンの秘密基地 Openしたってよ。 #01</div>
+      <div class="video-meta">秘密基地 — 2026.05.09</div>
+    </div>
+
+    <!-- 動画が増えたらここに追加 -->
+    <!--
+    <div class="video-section">
+      <div class="video-section-title">Videos</div>
+      <div class="video-list">
+        <div class="video-card">
+          <div class="video-wrapper">
+            <iframe src="https://www.youtube.com/embed/VIDEO_ID" allowfullscreen></iframe>
+          </div>
+          <div class="video-card-info">
+            <div class="video-card-title">タイトル</div>
+            <div class="video-card-desc">説明文</div>
+            <div class="video-card-meta">カテゴリ — 日付</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    -->
+
+  </div>
+
+  <footer class="page-footer">
+    <span>DAISUKEMAN BASE</span>
+    <span>&copy; 2026 D@ISM</span>
+  </footer>
+
+  <script>
+    const toggle = document.getElementById('themeToggle');
+    const html = document.documentElement;
+    const saved = localStorage.getItem('theme');
+    if (saved) html.setAttribute('data-theme', saved);
+
+    toggle.addEventListener('click', () => {
+      const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+    });
+  </script>
+
+</body>
+</html>

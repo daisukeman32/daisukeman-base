@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>逆QRコード — QR画像からURLを読み取る</title>
+<meta name="description" content="QRコードの画像を読み込んで、中に入っているURLやテキストを表示するツール。画像はブラウザ内で処理され、サーバーには送信されません。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg-primary: #060606;
+  --bg-secondary: #0f0f0f;
+  --text-primary: #eee;
+  --text-sub: #9a9a9a;
+  --border: #181818;
+  --btn-bg: #fff;
+  --btn-text: #000;
+  --input-bg: #0a0a0a;
+  --drop-bg: #0a0a0a;
+  --drop-border: #333;
+  --drop-hover-border: #555;
+  --result-bg: #111;
+  --history-bg: #0a0a0a;
+  --history-border: #1a1a1a;
+}
+
+[data-theme="light"] {
+  --bg-primary: #f5f3f0;
+  --bg-secondary: #fff;
+  --text-primary: #1a1a1a;
+  --text-sub: #666;
+  --border: #e0ddd8;
+  --btn-bg: #1a1a1a;
+  --btn-text: #fff;
+  --input-bg: #fff;
+  --drop-bg: #fff;
+  --drop-border: #ccc;
+  --drop-hover-border: #999;
+  --result-bg: #fff;
+  --history-bg: #fff;
+  --history-border: #e0ddd8;
+}
+
+body {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: background 0.3s, color 0.3s;
+}
+
+a { color: var(--text-sub); text-decoration: none; }
+a:hover { color: var(--text-primary); }
+
+.container {
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Nav */
+nav {
+  padding: 20px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+nav a { font-size: 0.85rem; }
+
+.theme-toggle {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-sub);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-family: inherit;
+  transition: color 0.3s, border-color 0.3s;
+}
+.theme-toggle:hover { color: var(--text-primary); border-color: var(--text-sub); }
+
+/* Header */
+header {
+  text-align: center;
+  padding: 40px 0 10px;
+}
+
+header h1 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+}
+
+header p {
+  color: var(--text-sub);
+  font-size: 0.9rem;
+}
+
+/* Drop zone */
+.drop-zone {
+  margin-top: 32px;
+  padding: 60px 20px;
+  border: 2px dashed var(--drop-border);
+  border-radius: 12px;
+  background: var(--drop-bg);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  position: relative;
+}
+
+.drop-zone:hover,
+.drop-zone.dragover {
+  border-color: var(--drop-hover-border);
+}
+
+.drop-zone-icon {
+  font-size: 2.5rem;
+  margin-bottom: 16px;
+  opacity: 0.4;
+}
+
+.drop-zone-main {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.drop-zone-sub {
+  font-size: 0.8rem;
+  color: var(--text-sub);
+  line-height: 1.6;
+}
+
+.drop-zone input[type="file"] {
+  display: none;
+}
+
+/* Result */
+.result-section {
+  display: none;
+  margin-top: 32px;
+}
+
+.result-section.active {
+  display: block;
+}
+
+.result-card {
+  background: var(--result-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 28px 24px;
+  text-align: center;
+}
+
+.result-label {
+  font-size: 0.75rem;
+  color: var(--text-sub);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 16px;
+}
+
+.result-value {
+  font-size: 1.2rem;
+  font-weight: 600;
+  word-break: break-all;
+  line-height: 1.6;
+  margin-bottom: 20px;
+  user-select: all;
+}
+
+.result-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn:hover { opacity: 0.85; }
+
+.btn-primary {
+  background: var(--btn-bg);
+  color: var(--btn-text);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text-sub);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover { color: var(--text-primary); border-color: var(--text-sub); }
+
+.copied-feedback {
+  font-size: 0.8rem;
+  color: var(--text-sub);
+  margin-top: 12px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.copied-feedback.show { opacity: 1; }
+
+/* Error */
+.error-section {
+  display: none;
+  margin-top: 32px;
+  text-align: center;
+}
+
+.error-section.active { display: block; }
+
+.error-msg {
+  background: var(--result-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  color: var(--text-sub);
+  font-size: 0.9rem;
+}
+
+/* History */
+.history-section {
+  margin-top: 40px;
+  padding-bottom: 40px;
+}
+
+.history-section h2 {
+  font-size: 0.8rem;
+  color: var(--text-sub);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 12px;
+}
+
+.history-list {
+  list-style: none;
+}
+
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--history-bg);
+  border: 1px solid var(--history-border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  font-size: 0.82rem;
+  transition: background 0.2s;
+}
+
+.history-item:hover { background: var(--bg-secondary); }
+
+.history-value {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: all;
+}
+
+.history-value:hover { color: var(--text-sub); }
+
+.history-time {
+  color: var(--text-sub);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.history-empty {
+  color: var(--text-sub);
+  font-size: 0.82rem;
+}
+
+.history-clear {
+  background: none;
+  border: none;
+  color: var(--text-sub);
+  font-size: 0.75rem;
+  cursor: pointer;
+  font-family: inherit;
+  margin-left: 8px;
+}
+.history-clear:hover { color: var(--text-primary); }
+
+.history-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+/* Unsupported */
+.unsupported {
+  display: none;
+  margin-top: 32px;
+  text-align: center;
+  padding: 24px;
+  background: var(--result-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text-sub);
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
+.unsupported.active { display: block; }
+
+/* Footer */
+footer {
+  margin-top: auto;
+  padding: 24px 0;
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--text-sub);
+}
+
+/* Loading */
+.loading {
+  display: none;
+  margin-top: 32px;
+  text-align: center;
+  color: var(--text-sub);
+  font-size: 0.9rem;
+}
+
+.loading.active { display: block; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.loading-dot {
+  animation: pulse 1.2s infinite;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  header h1 { font-size: 1.4rem; }
+  .drop-zone { padding: 40px 16px; }
+  .result-value { font-size: 1rem; }
+  .result-actions { flex-direction: column; align-items: center; }
+  .btn { width: 100%; justify-content: center; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <nav>
+    <a href="../">&larr; 秘密倉庫に戻る</a>
+    <button class="theme-toggle" id="themeToggle">Light</button>
+  </nav>
+
+  <header>
+    <h1>逆QRコード</h1>
+    <p>QR画像からURL・テキストを読み取る</p>
+  </header>
+
+  <div class="unsupported" id="unsupported">
+    このブラウザはQRコード読み取りに対応していません。<br>
+    Chrome / Edge の最新版をお使いください。
+  </div>
+
+  <div id="inputSection">
+    <div class="drop-zone" id="dropZone">
+      <div class="drop-zone-icon">&#9634;</div>
+      <div class="drop-zone-main">QRコード画像をドロップ</div>
+      <div class="drop-zone-sub">
+        クリックしてファイル選択 / Ctrl+V で貼り付け
+      </div>
+      <input type="file" id="fileInput" accept="image/*">
+    </div>
+  </div>
+
+  <div class="loading" id="loading">
+    <span class="loading-dot">読み取り中...</span>
+  </div>
+
+  <div class="error-section" id="errorSection">
+    <div class="error-msg" id="errorMsg">QRコードが検出できませんでした</div>
+    <div style="margin-top: 16px;">
+      <button class="btn btn-secondary" id="retryFromError">別のQRコードを読む</button>
+    </div>
+  </div>
+
+  <div class="result-section" id="resultSection">
+    <div class="result-card">
+      <div class="result-label">読み取り結果</div>
+      <div class="result-value" id="resultValue"></div>
+      <div class="result-actions">
+        <a class="btn btn-primary" id="openBtn" href="#" target="_blank" rel="noopener noreferrer" style="display:none;text-decoration:none;">開く</a>
+        <button class="btn btn-primary" id="copyBtn">コピー</button>
+        <button class="btn btn-secondary" id="retryBtn">別のQRコードを読む</button>
+      </div>
+      <div class="copied-feedback" id="copiedFeedback">コピーしました</div>
+    </div>
+  </div>
+
+  <div class="history-section" id="historySection">
+    <div class="history-header">
+      <h2>履歴</h2>
+      <button class="history-clear" id="historyClear">クリア</button>
+    </div>
+    <ul class="history-list" id="historyList"></ul>
+  </div>
+</div>
+
+<footer>
+  <div class="container">
+    画像はブラウザ内で処理されます。サーバーへのアップロードは行いません。
+  </div>
+</footer>
+
+<canvas id="canvas" style="display:none;"></canvas>
+
+<script>
+(function() {
+  'use strict';
+
+  // --- Theme ---
+  const themeToggle = document.getElementById('themeToggle');
+  const savedTheme = localStorage.getItem('rqr-theme') || 'dark';
+  if (savedTheme === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    themeToggle.textContent = 'Dark';
+  }
+
+  themeToggle.addEventListener('click', function() {
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    if (isLight) {
+      document.documentElement.removeAttribute('data-theme');
+      themeToggle.textContent = 'Light';
+      localStorage.setItem('rqr-theme', 'dark');
+    } else {
+      document.documentElement.setAttribute('data-theme', 'light');
+      themeToggle.textContent = 'Dark';
+      localStorage.setItem('rqr-theme', 'light');
+    }
+  });
+
+  // --- BarcodeDetector check ---
+  const hasBarcodeDetector = 'BarcodeDetector' in window;
+
+  // Check support (BarcodeDetector may exist but not support qr_code)
+  let qrSupported = false;
+
+  async function checkSupport() {
+    if (!hasBarcodeDetector) return false;
+    try {
+      const formats = await BarcodeDetector.getSupportedFormats();
+      return formats.includes('qr_code');
+    } catch(e) {
+      return false;
+    }
+  }
+
+  // --- Elements ---
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+  const inputSection = document.getElementById('inputSection');
+  const loading = document.getElementById('loading');
+  const errorSection = document.getElementById('errorSection');
+  const resultSection = document.getElementById('resultSection');
+  const resultValue = document.getElementById('resultValue');
+  const openBtn = document.getElementById('openBtn');
+  const copyBtn = document.getElementById('copyBtn');
+  const copiedFeedback = document.getElementById('copiedFeedback');
+  const retryBtn = document.getElementById('retryBtn');
+  const retryFromError = document.getElementById('retryFromError');
+  const historyList = document.getElementById('historyList');
+  const historyClear = document.getElementById('historyClear');
+  const unsupported = document.getElementById('unsupported');
+  const canvas = document.getElementById('canvas');
+
+  // --- Init ---
+  checkSupport().then(function(supported) {
+    qrSupported = supported;
+    if (!supported) {
+      // Try fallback: we'll attempt Canvas + jsQR-style manual decode
+      // Since we can't include jsQR inline without huge size, show unsupported msg
+      // But first check if BarcodeDetector exists at all (some browsers have partial support)
+      if (!hasBarcodeDetector) {
+        unsupported.classList.add('active');
+        inputSection.style.display = 'none';
+      }
+    }
+    renderHistory();
+  });
+
+  // --- Drag & Drop ---
+  dropZone.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+  });
+
+  dropZone.addEventListener('dragleave', function(e) {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+  });
+
+  dropZone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const files = e.dataTransfer.files;
+    if (files.length > 0 && files[0].type.startsWith('image/')) {
+      processFile(files[0]);
+    }
+  });
+
+  // --- Click to select ---
+  dropZone.addEventListener('click', function() {
+    fileInput.click();
+  });
+
+  fileInput.addEventListener('change', function() {
+    if (fileInput.files.length > 0) {
+      processFile(fileInput.files[0]);
+    }
+  });
+
+  // --- Paste ---
+  document.addEventListener('paste', function(e) {
+    const items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        const blob = items[i].getAsFile();
+        if (blob) {
+          processFile(blob);
+          return;
+        }
+      }
+    }
+  });
+
+  // --- Process image file ---
+  function processFile(file) {
+    showLoading();
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = new Image();
+      img.onload = function() {
+        decodeQR(img);
+      };
+      img.onerror = function() {
+        showError('画像の読み込みに失敗しました');
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // --- Decode QR ---
+  async function decodeQR(img) {
+    // Try BarcodeDetector first
+    if (hasBarcodeDetector) {
+      try {
+        const detector = new BarcodeDetector({ formats: ['qr_code'] });
+        const results = await detector.detect(img);
+        if (results.length > 0) {
+          showResult(results[0].rawValue);
+          return;
+        }
+      } catch(e) {
+        // fall through
+      }
+    }
+
+    // Fallback: try with canvas ImageData (still using BarcodeDetector but with canvas)
+    try {
+      const ctx = canvas.getContext('2d');
+      canvas.width = img.naturalWidth || img.width;
+      canvas.height = img.naturalHeight || img.height;
+      ctx.drawImage(img, 0, 0);
+
+      if (hasBarcodeDetector) {
+        const detector = new BarcodeDetector({ formats: ['qr_code'] });
+        const results = await detector.detect(canvas);
+        if (results.length > 0) {
+          showResult(results[0].rawValue);
+          return;
+        }
+      }
+    } catch(e) {
+      // fall through
+    }
+
+    showError('QRコードが検出できませんでした');
+  }
+
+  // --- UI State ---
+  function showLoading() {
+    inputSection.style.display = 'none';
+    loading.classList.add('active');
+    errorSection.classList.remove('active');
+    resultSection.classList.remove('active');
+  }
+
+  function showResult(value) {
+    loading.classList.remove('active');
+    errorSection.classList.remove('active');
+    resultSection.classList.add('active');
+
+    resultValue.textContent = value;
+
+    // Check if URL
+    if (isURL(value)) {
+      openBtn.style.display = '';
+      openBtn.href = value;
+    } else {
+      openBtn.style.display = 'none';
+    }
+
+    addToHistory(value);
+    copiedFeedback.classList.remove('show');
+  }
+
+  function showError(msg) {
+    loading.classList.remove('active');
+    resultSection.classList.remove('active');
+    errorSection.classList.add('active');
+    document.getElementById('errorMsg').textContent = msg;
+  }
+
+  function resetUI() {
+    inputSection.style.display = '';
+    loading.classList.remove('active');
+    errorSection.classList.remove('active');
+    resultSection.classList.remove('active');
+    fileInput.value = '';
+  }
+
+  // --- URL check ---
+  function isURL(str) {
+    try {
+      const url = new URL(str);
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch(e) {
+      return false;
+    }
+  }
+
+  // --- Copy ---
+  copyBtn.addEventListener('click', function() {
+    const text = resultValue.textContent;
+    navigator.clipboard.writeText(text).then(function() {
+      copiedFeedback.classList.add('show');
+      setTimeout(function() {
+        copiedFeedback.classList.remove('show');
+      }, 2000);
+    });
+  });
+
+  // --- Retry ---
+  retryBtn.addEventListener('click', resetUI);
+  retryFromError.addEventListener('click', resetUI);
+
+  // --- History ---
+  function getHistory() {
+    try {
+      return JSON.parse(localStorage.getItem('rqr-history') || '[]');
+    } catch(e) {
+      return [];
+    }
+  }
+
+  function addToHistory(value) {
+    let history = getHistory();
+    // Remove duplicate
+    history = history.filter(function(item) { return item.value !== value; });
+    history.unshift({
+      value: value,
+      time: Date.now()
+    });
+    // Keep last 5
+    history = history.slice(0, 5);
+    localStorage.setItem('rqr-history', JSON.stringify(history));
+    renderHistory();
+  }
+
+  function renderHistory() {
+    const history = getHistory();
+    historyList.innerHTML = '';
+
+    if (history.length === 0) {
+      historyList.innerHTML = '<li class="history-empty">まだ履歴がありません</li>';
+      historyClear.style.display = 'none';
+      return;
+    }
+
+    historyClear.style.display = '';
+
+    history.forEach(function(item) {
+      const li = document.createElement('li');
+      li.className = 'history-item';
+
+      const valueSpan = document.createElement('span');
+      valueSpan.className = 'history-value';
+      valueSpan.textContent = item.value;
+      valueSpan.title = item.value;
+      valueSpan.addEventListener('click', function() {
+        navigator.clipboard.writeText(item.value);
+      });
+
+      const timeSpan = document.createElement('span');
+      timeSpan.className = 'history-time';
+      timeSpan.textContent = formatTime(item.time);
+
+      li.appendChild(valueSpan);
+      li.appendChild(timeSpan);
+      historyList.appendChild(li);
+    });
+  }
+
+  function formatTime(ts) {
+    const d = new Date(ts);
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const h = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return m + '/' + day + ' ' + h + ':' + min;
+  }
+
+  // --- Clear history ---
+  historyClear.addEventListener('click', function() {
+    localStorage.removeItem('rqr-history');
+    renderHistory();
+  });
+
+})();
+</script>
+</body>
+</html>

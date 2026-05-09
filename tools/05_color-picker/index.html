@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>カラー抽出 — 画像からメインカラーを取得</title>
+<meta name="description" content="画像をアップロードするとメインカラーを5〜8色抽出し、HEX/RGBコード付きで表示。スポイト機能付き。全てブラウザ内で処理されます。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg-primary: #060606;
+  --bg-secondary: #0f0f0f;
+  --text-primary: #eee;
+  --text-sub: #9a9a9a;
+  --border: #181818;
+  --btn-bg: #fff;
+  --btn-text: #000;
+  --drop-bg: #0a0a0a;
+  --drop-border: #333;
+  --drop-hover-border: #555;
+  --card-bg: #111;
+  --card-border: #1a1a1a;
+}
+
+[data-theme="light"] {
+  --bg-primary: #f5f3f0;
+  --bg-secondary: #fff;
+  --text-primary: #1a1a1a;
+  --text-sub: #666;
+  --border: #e0ddd8;
+  --btn-bg: #1a1a1a;
+  --btn-text: #fff;
+  --drop-bg: #fff;
+  --drop-border: #ccc;
+  --drop-hover-border: #999;
+  --card-bg: #fff;
+  --card-border: #e0ddd8;
+}
+
+body {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: background 0.3s, color 0.3s;
+}
+
+a { color: var(--text-sub); text-decoration: none; }
+a:hover { color: var(--text-primary); }
+
+.container {
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Nav */
+nav {
+  padding: 20px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+nav a { font-size: 0.85rem; }
+
+.theme-toggle {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-sub);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-family: inherit;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.theme-toggle:hover {
+  border-color: var(--text-sub);
+  color: var(--text-primary);
+}
+
+/* Header */
+header {
+  padding: 40px 0 32px;
+  text-align: center;
+}
+
+header h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  letter-spacing: -0.02em;
+}
+
+header p {
+  color: var(--text-sub);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+/* Drop Zone */
+.drop-zone {
+  background: var(--drop-bg);
+  border: 2px dashed var(--drop-border);
+  border-radius: 12px;
+  padding: 48px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  margin-bottom: 24px;
+}
+
+.drop-zone:hover,
+.drop-zone.dragover {
+  border-color: var(--drop-hover-border);
+}
+
+.drop-zone-text {
+  color: var(--text-sub);
+  font-size: 0.9rem;
+  line-height: 1.8;
+}
+
+.drop-zone-text strong {
+  color: var(--text-primary);
+  display: block;
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+
+.drop-zone-text small {
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+#fileInput { display: none; }
+
+/* Preview */
+.preview-section {
+  display: none;
+  margin-bottom: 24px;
+}
+
+.preview-section.active { display: block; }
+
+.preview-wrapper {
+  position: relative;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.preview-wrapper canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  cursor: crosshair;
+}
+
+.eyedropper-hint {
+  display: none;
+}
+
+.eyedropper-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 16px;
+  background: transparent;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  color: var(--text-sub);
+  font-family: var(--font);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.eyedropper-btn:hover {
+  border-color: var(--text-sub);
+  color: var(--text);
+}
+
+.eyedropper-btn.active {
+  background: var(--text);
+  color: var(--bg);
+  border-color: var(--text);
+}
+
+.eyedropper-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Picked Color */
+.picked-color {
+  display: none;
+  align-items: center;
+  gap: 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 24px;
+}
+
+.picked-color.active { display: flex; }
+
+.picked-color-label {
+  font-size: 0.75rem;
+  color: var(--text-sub);
+  white-space: nowrap;
+}
+
+.picked-swatch {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--card-border);
+  flex-shrink: 0;
+}
+
+.picked-codes {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.picked-codes span {
+  font-size: 0.85rem;
+  font-family: 'Inter', monospace;
+  cursor: pointer;
+}
+
+.picked-codes span:hover { opacity: 0.7; }
+
+/* Palette */
+.palette-section {
+  display: none;
+  margin-bottom: 32px;
+}
+
+.palette-section.active { display: block; }
+
+.palette-title {
+  font-size: 0.85rem;
+  color: var(--text-sub);
+  margin-bottom: 12px;
+}
+
+.palette-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.color-chip {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.color-chip:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.color-chip-swatch {
+  height: 72px;
+  width: 100%;
+}
+
+.color-chip-info {
+  padding: 10px 12px;
+}
+
+.color-chip-hex {
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: 'Inter', monospace;
+  margin-bottom: 2px;
+}
+
+.color-chip-rgb {
+  font-size: 0.72rem;
+  color: var(--text-sub);
+  font-family: 'Inter', monospace;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s, transform 0.25s;
+  z-index: 100;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Reset Button */
+.reset-btn {
+  display: none;
+  width: 100%;
+  padding: 14px;
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border: none;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  margin-bottom: 32px;
+  transition: opacity 0.2s;
+}
+
+.reset-btn.active { display: block; }
+.reset-btn:hover { opacity: 0.85; }
+
+/* Footer */
+footer {
+  margin-top: auto;
+  padding: 32px 0;
+  text-align: center;
+  color: var(--text-sub);
+  font-size: 0.75rem;
+  line-height: 1.6;
+  border-top: 1px solid var(--border);
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  header { padding: 24px 0 20px; }
+  header h1 { font-size: 1.25rem; }
+  .drop-zone { padding: 32px 16px; }
+  .palette-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+  .color-chip-swatch { height: 56px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <nav>
+    <a href="../">&larr; 秘密倉庫に戻る</a>
+    <button class="theme-toggle" id="themeToggle">Light</button>
+  </nav>
+
+  <header>
+    <h1>Color Picker</h1>
+    <p>画像からメインカラーを抽出</p>
+  </header>
+
+  <div class="drop-zone" id="dropZone">
+    <div class="drop-zone-text">
+      <strong>画像をドロップ、またはクリックして選択</strong>
+      Ctrl+V でクリップボードから貼り付けも可能<br>
+      <small>PNG / JPG / WebP / GIF</small>
+    </div>
+  </div>
+  <input type="file" id="fileInput" accept="image/*">
+
+  <div class="preview-section" id="previewSection">
+    <div class="preview-wrapper">
+      <canvas id="canvas"></canvas>
+    </div>
+    <button class="eyedropper-btn" id="eyedropperBtn">
+      <svg viewBox="0 0 24 24"><path d="M21.17 2.06A3.25 3.25 0 0 0 18.84 1a3.22 3.22 0 0 0-2.29.95L13.5 5 11 2.5 9.59 3.91 12 6.33l-8 8.09a2 2 0 0 0-.58 1.41V20h4.17a2 2 0 0 0 1.42-.59l8.08-8L19.5 13.5l1.41-1.41L18.42 9.6l3.04-3.04a3.25 3.25 0 0 0-.29-4.5z"/></svg>
+      スポイトモード
+    </button>
+  </div>
+
+  <div class="picked-color" id="pickedColor">
+    <span class="picked-color-label">Spot</span>
+    <div class="picked-swatch" id="pickedSwatch"></div>
+    <div class="picked-codes">
+      <span id="pickedHex" title="クリックでコピー"></span>
+      <span id="pickedRgb" title="クリックでコピー" style="color:var(--text-sub);font-size:0.78rem;"></span>
+    </div>
+  </div>
+
+  <div class="palette-section" id="paletteSection">
+    <p class="palette-title">Extracted Palette</p>
+    <div class="palette-grid" id="paletteGrid"></div>
+  </div>
+
+  <button class="reset-btn" id="resetBtn">別の画像を読む</button>
+</div>
+
+<footer>
+  <div class="container">
+    画像はブラウザ内で処理されます。サーバーへのアップロードは行いません。
+  </div>
+</footer>
+
+<div class="toast" id="toast">コピーしました</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // --- Theme ---
+  const themeToggle = document.getElementById('themeToggle');
+  const saved = localStorage.getItem('theme');
+  if (saved === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    themeToggle.textContent = 'Dark';
+  }
+  themeToggle.addEventListener('click', function() {
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    if (isLight) {
+      document.documentElement.removeAttribute('data-theme');
+      themeToggle.textContent = 'Light';
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.setAttribute('data-theme', 'light');
+      themeToggle.textContent = 'Dark';
+      localStorage.setItem('theme', 'light');
+    }
+  });
+
+  // --- Elements ---
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  const previewSection = document.getElementById('previewSection');
+  const paletteSection = document.getElementById('paletteSection');
+  const paletteGrid = document.getElementById('paletteGrid');
+  const pickedColor = document.getElementById('pickedColor');
+  const pickedSwatch = document.getElementById('pickedSwatch');
+  const pickedHex = document.getElementById('pickedHex');
+  const pickedRgb = document.getElementById('pickedRgb');
+  const resetBtn = document.getElementById('resetBtn');
+  const toast = document.getElementById('toast');
+
+  let imageData = null;
+  let canvasWidth = 0;
+  let canvasHeight = 0;
+
+  // --- Toast ---
+  let toastTimer = null;
+  function showToast(msg) {
+    toast.textContent = msg || 'コピーしました';
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function() { toast.classList.remove('show'); }, 1500);
+  }
+
+  function copyText(text) {
+    navigator.clipboard.writeText(text).then(function() { showToast(); });
+  }
+
+  // --- File Loading ---
+  dropZone.addEventListener('click', function() { fileInput.click(); });
+  fileInput.addEventListener('change', function(e) {
+    if (e.target.files && e.target.files[0]) loadImageFile(e.target.files[0]);
+  });
+
+  dropZone.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+  });
+  dropZone.addEventListener('dragleave', function() {
+    dropZone.classList.remove('dragover');
+  });
+  dropZone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    var files = e.dataTransfer.files;
+    if (files && files[0] && files[0].type.startsWith('image/')) loadImageFile(files[0]);
+  });
+
+  document.addEventListener('paste', function(e) {
+    var items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        loadImageFile(items[i].getAsFile());
+        break;
+      }
+    }
+  });
+
+  function loadImageFile(file) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onload = function() { processImage(img); };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function processImage(img) {
+    // Scale down for display and processing
+    var maxW = 600;
+    var scale = img.width > maxW ? maxW / img.width : 1;
+    canvasWidth = Math.round(img.width * scale);
+    canvasHeight = Math.round(img.height * scale);
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+    ctx.drawImage(img, 0, 0, canvasWidth, canvasHeight);
+    imageData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
+
+    dropZone.style.display = 'none';
+    previewSection.classList.add('active');
+    resetBtn.classList.add('active');
+
+    // Extract palette
+    var colors = medianCut(imageData.data, canvasWidth * canvasHeight, 8);
+    renderPalette(colors);
+    paletteSection.classList.add('active');
+  }
+
+  // --- Eyedropper ---
+  var eyedropperBtn = document.getElementById('eyedropperBtn');
+  var eyedropperActive = false;
+
+  eyedropperBtn.addEventListener('click', function() {
+    eyedropperActive = !eyedropperActive;
+    eyedropperBtn.classList.toggle('active', eyedropperActive);
+    canvas.style.cursor = eyedropperActive ? 'crosshair' : 'default';
+  });
+
+  canvas.addEventListener('click', function(e) {
+    if (!imageData || !eyedropperActive) return;
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = canvasWidth / rect.width;
+    var scaleY = canvasHeight / rect.height;
+    var x = Math.floor((e.clientX - rect.left) * scaleX);
+    var y = Math.floor((e.clientY - rect.top) * scaleY);
+    x = Math.max(0, Math.min(x, canvasWidth - 1));
+    y = Math.max(0, Math.min(y, canvasHeight - 1));
+    var idx = (y * canvasWidth + x) * 4;
+    var r = imageData.data[idx];
+    var g = imageData.data[idx + 1];
+    var b = imageData.data[idx + 2];
+    var hex = rgbToHex(r, g, b);
+    pickedSwatch.style.background = hex;
+    pickedHex.textContent = hex;
+    pickedRgb.textContent = 'rgb(' + r + ', ' + g + ', ' + b + ')';
+    pickedColor.classList.add('active');
+  });
+
+  pickedHex.addEventListener('click', function() { copyText(pickedHex.textContent); });
+  pickedRgb.addEventListener('click', function() { copyText(pickedRgb.textContent); });
+
+  // --- Reset ---
+  resetBtn.addEventListener('click', function() {
+    dropZone.style.display = '';
+    previewSection.classList.remove('active');
+    paletteSection.classList.remove('active');
+    pickedColor.classList.remove('active');
+    resetBtn.classList.remove('active');
+    paletteGrid.innerHTML = '';
+    imageData = null;
+    fileInput.value = '';
+  });
+
+  // --- Palette Rendering ---
+  function renderPalette(colors) {
+    paletteGrid.innerHTML = '';
+    colors.forEach(function(c) {
+      var hex = rgbToHex(c[0], c[1], c[2]);
+      var chip = document.createElement('div');
+      chip.className = 'color-chip';
+      chip.title = 'クリックでHEXをコピー';
+      chip.innerHTML =
+        '<div class="color-chip-swatch" style="background:' + hex + '"></div>' +
+        '<div class="color-chip-info">' +
+          '<div class="color-chip-hex">' + hex + '</div>' +
+          '<div class="color-chip-rgb">rgb(' + c[0] + ', ' + c[1] + ', ' + c[2] + ')</div>' +
+        '</div>';
+      chip.addEventListener('click', function() { copyText(hex); });
+      paletteGrid.appendChild(chip);
+    });
+  }
+
+  // --- Utility ---
+  function rgbToHex(r, g, b) {
+    return '#' + ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1).toUpperCase();
+  }
+
+  // --- Median Cut Algorithm ---
+  function medianCut(data, pixelCount, maxColors) {
+    // Sample pixels (skip transparent, near-white, near-black extremes less aggressively)
+    var pixels = [];
+    var step = pixelCount > 50000 ? Math.floor(pixelCount / 25000) : 1;
+    for (var i = 0; i < pixelCount; i += step) {
+      var idx = i * 4;
+      var a = data[idx + 3];
+      if (a < 128) continue; // skip transparent
+      pixels.push([data[idx], data[idx + 1], data[idx + 2]]);
+    }
+
+    if (pixels.length === 0) return [[128, 128, 128]];
+
+    // Initial bucket
+    var buckets = [pixels];
+
+    // Split until we have enough buckets
+    while (buckets.length < maxColors) {
+      // Find the bucket with the largest range to split
+      var bestIdx = -1;
+      var bestRange = -1;
+      var bestChannel = 0;
+
+      for (var b = 0; b < buckets.length; b++) {
+        var bucket = buckets[b];
+        if (bucket.length < 2) continue;
+        for (var ch = 0; ch < 3; ch++) {
+          var mn = 255, mx = 0;
+          for (var p = 0; p < bucket.length; p++) {
+            var v = bucket[p][ch];
+            if (v < mn) mn = v;
+            if (v > mx) mx = v;
+          }
+          var range = mx - mn;
+          if (range > bestRange) {
+            bestRange = range;
+            bestIdx = b;
+            bestChannel = ch;
+          }
+        }
+      }
+
+      if (bestIdx === -1 || bestRange === 0) break;
+
+      // Sort by the channel with largest range
+      var toSplit = buckets[bestIdx];
+      toSplit.sort(function(a, b) { return a[bestChannel] - b[bestChannel]; });
+      var mid = Math.floor(toSplit.length / 2);
+      buckets.splice(bestIdx, 1, toSplit.slice(0, mid), toSplit.slice(mid));
+    }
+
+    // Average each bucket
+    var result = [];
+    for (var b = 0; b < buckets.length; b++) {
+      var bucket = buckets[b];
+      var rSum = 0, gSum = 0, bSum = 0;
+      for (var p = 0; p < bucket.length; p++) {
+        rSum += bucket[p][0];
+        gSum += bucket[p][1];
+        bSum += bucket[p][2];
+      }
+      var len = bucket.length;
+      result.push([
+        Math.round(rSum / len),
+        Math.round(gSum / len),
+        Math.round(bSum / len)
+      ]);
+    }
+
+    // Sort by luminance (dark to light)
+    result.sort(function(a, b) {
+      return (a[0] * 0.299 + a[1] * 0.587 + a[2] * 0.114) -
+             (b[0] * 0.299 + b[1] * 0.587 + b[2] * 0.114);
+    });
+
+    return result;
+  }
+})();
+</script>
+</body>
+</html>

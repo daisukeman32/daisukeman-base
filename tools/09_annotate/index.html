@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>画像アノテーション — 矢印・枠・文字入れツール</title>
+<meta name="description" content="画像に矢印・四角枠・丸枠・テキストを重ねて書き出せる簡易注釈ツール。画像はブラウザ内で処理され、サーバーへのアップロードは行いません。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg-primary: #060606;
+  --bg-secondary: #0f0f0f;
+  --text-primary: #eee;
+  --text-sub: #9a9a9a;
+  --border: #181818;
+  --btn-bg: #fff;
+  --btn-text: #000;
+  --toolbar-bg: #0f0f0f;
+  --toolbar-border: #222;
+  --tool-hover: #1a1a1a;
+  --tool-active: #2a2a2a;
+  --drop-bg: #0a0a0a;
+  --drop-border: #333;
+  --drop-hover-border: #555;
+}
+
+[data-theme="light"] {
+  --bg-primary: #f5f3f0;
+  --bg-secondary: #fff;
+  --text-primary: #1a1a1a;
+  --text-sub: #666;
+  --border: #e0ddd8;
+  --btn-bg: #1a1a1a;
+  --btn-text: #fff;
+  --toolbar-bg: #fff;
+  --toolbar-border: #e0ddd8;
+  --tool-hover: #f0ede8;
+  --tool-active: #e5e2dd;
+  --drop-bg: #fff;
+  --drop-border: #ccc;
+  --drop-hover-border: #999;
+}
+
+body {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: background 0.3s, color 0.3s;
+}
+
+a { color: var(--text-sub); text-decoration: none; }
+a:hover { color: var(--text-primary); }
+
+.container {
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Nav */
+nav {
+  padding: 20px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+nav a { font-size: 0.85rem; }
+
+.theme-toggle {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-sub);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-family: inherit;
+  transition: color 0.3s, border-color 0.3s;
+}
+.theme-toggle:hover { color: var(--text-primary); border-color: var(--text-sub); }
+
+/* Header */
+header {
+  text-align: center;
+  padding: 40px 0 10px;
+}
+header h1 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+header p {
+  color: var(--text-sub);
+  font-size: 0.9rem;
+  margin-top: 8px;
+}
+
+/* Drop zone */
+.drop-zone {
+  border: 2px dashed var(--drop-border);
+  border-radius: 12px;
+  background: var(--drop-bg);
+  padding: 60px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  margin-top: 24px;
+}
+.drop-zone:hover, .drop-zone.drag-over {
+  border-color: var(--drop-hover-border);
+}
+.drop-zone p { color: var(--text-sub); font-size: 0.9rem; line-height: 1.8; }
+.drop-zone .hint { font-size: 0.78rem; color: var(--text-sub); opacity: 0.7; margin-top: 8px; }
+
+/* Editor area */
+.editor { display: none; margin-top: 24px; }
+.editor.active { display: block; }
+
+/* Toolbar */
+.toolbar {
+  background: var(--toolbar-bg);
+  border: 1px solid var(--toolbar-border);
+  border-radius: 10px;
+  padding: 8px 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.toolbar-sep {
+  width: 1px;
+  height: 28px;
+  background: var(--toolbar-border);
+  margin: 0 6px;
+}
+
+.tool-btn {
+  width: 36px;
+  height: 36px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: none;
+  color: var(--text-sub);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  padding: 0;
+}
+.tool-btn:hover { background: var(--tool-hover); color: var(--text-primary); }
+.tool-btn.active { background: var(--tool-active); color: var(--text-primary); border-color: var(--toolbar-border); }
+.tool-btn svg { width: 18px; height: 18px; pointer-events: none; }
+
+/* Color chips */
+.color-chip {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.color-chip:hover { transform: scale(1.15); }
+.color-chip.active { border-color: var(--text-primary); }
+
+/* Size selector */
+.size-btn {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--text-sub);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.7rem;
+  padding: 4px 8px;
+  transition: all 0.15s;
+}
+.size-btn:hover { color: var(--text-primary); }
+.size-btn.active { background: var(--tool-active); color: var(--text-primary); border-color: var(--toolbar-border); }
+
+/* Canvas wrapper */
+.canvas-wrapper {
+  position: relative;
+  display: inline-block;
+  border-radius: 8px;
+  overflow: hidden;
+  max-width: 100%;
+  cursor: crosshair;
+  line-height: 0;
+}
+.canvas-wrapper canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+#overlayCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* Text input overlay */
+.text-input-overlay {
+  position: absolute;
+  display: none;
+  z-index: 10;
+}
+.text-input-overlay input {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  font-weight: 700;
+  background: rgba(0,0,0,0.7);
+  border: 2px solid rgba(255,255,255,0.5);
+  border-radius: 4px;
+  padding: 6px 10px;
+  outline: none;
+  min-width: 200px;
+  color: #fff;
+  caret-color: #fff;
+}
+
+/* Action buttons */
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btn:hover { opacity: 0.85; }
+.btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+.btn-secondary {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-sub);
+}
+.btn-secondary:hover { color: var(--text-primary); border-color: var(--text-sub); }
+
+/* Footer */
+footer {
+  margin-top: auto;
+  padding: 40px 0 20px;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-sub);
+  opacity: 0.7;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  header h1 { font-size: 1.4rem; }
+  .toolbar { gap: 4px; padding: 6px 8px; }
+  .tool-btn { width: 32px; height: 32px; }
+  .toolbar-sep { margin: 0 3px; }
+  .color-chip { width: 18px; height: 18px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <nav>
+    <a href="../">&larr; 秘密倉庫に戻る</a>
+    <button class="theme-toggle" id="themeToggle">Light</button>
+  </nav>
+
+  <header>
+    <h1>画像アノテーション</h1>
+    <p>矢印・枠・文字を重ねてPNG書き出し</p>
+  </header>
+
+  <!-- Drop zone -->
+  <div class="drop-zone" id="dropZone">
+    <p>画像をドラッグ&ドロップ<br>またはクリックして選択</p>
+    <p class="hint">Ctrl+V でクリップボードからも貼り付けできます</p>
+    <input type="file" id="fileInput" accept="image/*" hidden>
+  </div>
+
+  <!-- Editor -->
+  <div class="editor" id="editor">
+    <div class="toolbar" id="toolbar">
+      <!-- Drawing tools -->
+      <div class="toolbar-group">
+        <button class="tool-btn active" data-tool="arrow" title="矢印">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="19" x2="19" y2="5"/>
+            <polyline points="12 5 19 5 19 12"/>
+          </svg>
+        </button>
+        <button class="tool-btn" data-tool="rect" title="四角枠">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="4" width="16" height="16" rx="1"/>
+          </svg>
+        </button>
+        <button class="tool-btn" data-tool="ellipse" title="丸/楕円枠">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <ellipse cx="12" cy="12" rx="9" ry="7"/>
+          </svg>
+        </button>
+        <button class="tool-btn" data-tool="freehand" title="フリーハンド">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 17c1-3 3-7 5-8s3 2 5 1 3-5 5-6 3 3 3 3"/>
+          </svg>
+        </button>
+        <button class="tool-btn" data-tool="text" title="テキスト">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="4 7 4 4 20 4 20 7"/>
+            <line x1="12" y1="4" x2="12" y2="20"/>
+            <line x1="8" y1="20" x2="16" y2="20"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="toolbar-sep"></div>
+
+      <!-- Colors -->
+      <div class="toolbar-group">
+        <div class="color-chip active" data-color="#e74c3c" style="background:#e74c3c" title="赤"></div>
+        <div class="color-chip" data-color="#3498db" style="background:#3498db" title="青"></div>
+        <div class="color-chip" data-color="#f1c40f" style="background:#f1c40f" title="黄"></div>
+        <div class="color-chip" data-color="#111111" style="background:#111;border:1px solid #555" title="黒"></div>
+        <div class="color-chip" data-color="#ffffff" style="background:#fff;border:1px solid #999" title="白"></div>
+      </div>
+
+      <div class="toolbar-sep"></div>
+
+      <!-- Line width -->
+      <div class="toolbar-group">
+        <button class="size-btn" data-width="2" title="細い線">細</button>
+        <button class="size-btn active" data-width="4" title="中くらいの線">中</button>
+        <button class="size-btn" data-width="8" title="太い線">太</button>
+      </div>
+
+      <div class="toolbar-sep"></div>
+
+      <!-- Font size (visible only for text tool) -->
+      <div class="toolbar-group" id="fontSizeGroup" style="display:none">
+        <button class="size-btn" data-fontsize="16" title="小さい文字">小</button>
+        <button class="size-btn active" data-fontsize="24" title="中くらいの文字">中</button>
+        <button class="size-btn" data-fontsize="36" title="大きい文字">大</button>
+      </div>
+      <div class="toolbar-sep" id="fontSizeSep" style="display:none"></div>
+
+      <!-- Undo / Clear -->
+      <div class="toolbar-group">
+        <button class="tool-btn" id="undoBtn" title="元に戻す (Ctrl+Z)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="1 4 1 10 7 10"/>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+          </svg>
+        </button>
+        <button class="tool-btn" id="clearBtn" title="全クリア">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+            <path d="M10 11v6"/>
+            <path d="M14 11v6"/>
+            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Canvas -->
+    <div class="canvas-wrapper" id="canvasWrapper">
+      <canvas id="baseCanvas"></canvas>
+      <canvas id="overlayCanvas"></canvas>
+      <div class="text-input-overlay" id="textInput">
+        <input type="text" id="textField" placeholder="テキストを入力...">
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="actions">
+      <button class="btn btn-primary" id="saveBtn">PNG保存</button>
+      <button class="btn btn-secondary" id="resetBtn">別の画像を読む</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="container">
+    画像はブラウザ内で処理されます。サーバーへのアップロードは行いません。
+  </div>
+</footer>
+
+<script>
+(function() {
+  'use strict';
+
+  // --- Theme ---
+  const themeToggle = document.getElementById('themeToggle');
+  const savedTheme = localStorage.getItem('annotate-theme') || 'dark';
+  if (savedTheme === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    themeToggle.textContent = 'Dark';
+  }
+  themeToggle.addEventListener('click', function() {
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    if (isLight) {
+      document.documentElement.removeAttribute('data-theme');
+      themeToggle.textContent = 'Light';
+      localStorage.setItem('annotate-theme', 'dark');
+    } else {
+      document.documentElement.setAttribute('data-theme', 'light');
+      themeToggle.textContent = 'Dark';
+      localStorage.setItem('annotate-theme', 'light');
+    }
+  });
+
+  // --- Elements ---
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+  const editorEl = document.getElementById('editor');
+  const baseCanvas = document.getElementById('baseCanvas');
+  const overlayCanvas = document.getElementById('overlayCanvas');
+  const canvasWrapper = document.getElementById('canvasWrapper');
+  const textInputEl = document.getElementById('textInput');
+  const textField = document.getElementById('textField');
+  const fontSizeGroup = document.getElementById('fontSizeGroup');
+  const fontSizeSep = document.getElementById('fontSizeSep');
+
+  const baseCtx = baseCanvas.getContext('2d');
+  const overlayCtx = overlayCanvas.getContext('2d');
+
+  // --- State ---
+  let currentTool = 'arrow';
+  let currentColor = '#e74c3c';
+  let currentWidth = 4;
+  let currentFontSize = 24;
+  let history = []; // array of ImageData
+  let isDrawing = false;
+  let startX = 0, startY = 0;
+  let freehandPoints = [];
+  let loadedImage = null;
+  let scaleRatio = 1; // display pixels to canvas pixels
+
+  // --- File loading ---
+  dropZone.addEventListener('click', function() { fileInput.click(); });
+  fileInput.addEventListener('change', function(e) {
+    if (e.target.files[0]) loadImage(e.target.files[0]);
+  });
+
+  dropZone.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    dropZone.classList.add('drag-over');
+  });
+  dropZone.addEventListener('dragleave', function() {
+    dropZone.classList.remove('drag-over');
+  });
+  dropZone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    var files = e.dataTransfer.files;
+    if (files.length && files[0].type.startsWith('image/')) loadImage(files[0]);
+  });
+
+  // Clipboard paste
+  document.addEventListener('paste', function(e) {
+    var items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        loadImage(items[i].getAsFile());
+        break;
+      }
+    }
+  });
+
+  function loadImage(file) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onload = function() {
+        loadedImage = img;
+        setupCanvas(img);
+        dropZone.style.display = 'none';
+        editorEl.classList.add('active');
+        history = [];
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function setupCanvas(img) {
+    var w = img.naturalWidth;
+    var h = img.naturalHeight;
+    baseCanvas.width = w;
+    baseCanvas.height = h;
+    overlayCanvas.width = w;
+    overlayCanvas.height = h;
+    baseCtx.drawImage(img, 0, 0);
+    overlayCtx.clearRect(0, 0, w, h);
+  }
+
+  // --- Coordinate helpers ---
+  function getCanvasCoords(e) {
+    var rect = overlayCanvas.getBoundingClientRect();
+    var x = (e.clientX - rect.left) * (overlayCanvas.width / rect.width);
+    var y = (e.clientY - rect.top) * (overlayCanvas.height / rect.height);
+    return { x: x, y: y };
+  }
+
+  // --- Tool selection ---
+  document.querySelectorAll('.tool-btn[data-tool]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.tool-btn[data-tool]').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      currentTool = btn.getAttribute('data-tool');
+      var isText = currentTool === 'text';
+      fontSizeGroup.style.display = isText ? 'flex' : 'none';
+      fontSizeSep.style.display = isText ? 'block' : 'none';
+    });
+  });
+
+  // Color selection
+  document.querySelectorAll('.color-chip').forEach(function(chip) {
+    chip.addEventListener('click', function() {
+      document.querySelectorAll('.color-chip').forEach(function(c) { c.classList.remove('active'); });
+      chip.classList.add('active');
+      currentColor = chip.getAttribute('data-color');
+    });
+  });
+
+  // Line width
+  document.querySelectorAll('.size-btn[data-width]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.size-btn[data-width]').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      currentWidth = parseInt(btn.getAttribute('data-width'));
+    });
+  });
+
+  // Font size
+  document.querySelectorAll('.size-btn[data-fontsize]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.size-btn[data-fontsize]').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      currentFontSize = parseInt(btn.getAttribute('data-fontsize'));
+    });
+  });
+
+  // --- Drawing ---
+  function saveState() {
+    history.push(overlayCtx.getImageData(0, 0, overlayCanvas.width, overlayCanvas.height));
+  }
+
+  function redrawOverlay() {
+    if (history.length > 0) {
+      overlayCtx.putImageData(history[history.length - 1], 0, 0);
+    } else {
+      overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+    }
+  }
+
+  // Scale line width relative to canvas size
+  function scaledWidth() {
+    var displayW = overlayCanvas.getBoundingClientRect().width;
+    var ratio = overlayCanvas.width / displayW;
+    return currentWidth * ratio;
+  }
+
+  function scaledFontSize() {
+    var displayW = overlayCanvas.getBoundingClientRect().width;
+    var ratio = overlayCanvas.width / displayW;
+    return currentFontSize * ratio;
+  }
+
+  overlayCanvas.addEventListener('mousedown', onPointerDown);
+  overlayCanvas.addEventListener('mousemove', onPointerMove);
+  overlayCanvas.addEventListener('mouseup', onPointerUp);
+  overlayCanvas.addEventListener('mouseleave', onPointerUp);
+
+  // Touch support
+  overlayCanvas.addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    var touch = e.touches[0];
+    onPointerDown({ clientX: touch.clientX, clientY: touch.clientY });
+  }, { passive: false });
+  overlayCanvas.addEventListener('touchmove', function(e) {
+    e.preventDefault();
+    var touch = e.touches[0];
+    onPointerMove({ clientX: touch.clientX, clientY: touch.clientY });
+  }, { passive: false });
+  overlayCanvas.addEventListener('touchend', function(e) {
+    e.preventDefault();
+    onPointerUp({});
+  }, { passive: false });
+
+  function onPointerDown(e) {
+    if (currentTool === 'text') {
+      showTextInput(e);
+      return;
+    }
+    isDrawing = true;
+    var coords = getCanvasCoords(e);
+    startX = coords.x;
+    startY = coords.y;
+    if (currentTool === 'freehand') {
+      freehandPoints = [{ x: startX, y: startY }];
+    }
+    saveState();
+  }
+
+  function onPointerMove(e) {
+    if (!isDrawing) return;
+    var coords = getCanvasCoords(e);
+    redrawOverlay();
+
+    var sw = scaledWidth();
+    overlayCtx.strokeStyle = currentColor;
+    overlayCtx.lineWidth = sw;
+    overlayCtx.lineCap = 'round';
+    overlayCtx.lineJoin = 'round';
+
+    if (currentTool === 'arrow') {
+      drawArrow(overlayCtx, startX, startY, coords.x, coords.y, sw);
+    } else if (currentTool === 'rect') {
+      overlayCtx.beginPath();
+      overlayCtx.rect(startX, startY, coords.x - startX, coords.y - startY);
+      overlayCtx.stroke();
+    } else if (currentTool === 'ellipse') {
+      drawEllipse(overlayCtx, startX, startY, coords.x, coords.y);
+    } else if (currentTool === 'freehand') {
+      freehandPoints.push({ x: coords.x, y: coords.y });
+      drawFreehand(overlayCtx);
+    }
+  }
+
+  function onPointerUp(e) {
+    if (!isDrawing) return;
+    isDrawing = false;
+
+    // The preview was drawn on top of the last saved state.
+    // Now we need to capture the final result as the new state.
+    // Remove the state we saved at mousedown (it was the "before" state)
+    // and push the current canvas as the new "after" state.
+    history.pop();
+    saveState();
+  }
+
+  // --- Draw helpers ---
+  function drawArrow(ctx, x1, y1, x2, y2, sw) {
+    var headLen = Math.max(sw * 4, 16);
+    var angle = Math.atan2(y2 - y1, x2 - x1);
+
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - headLen * Math.cos(angle - Math.PI / 6), y2 - headLen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - headLen * Math.cos(angle + Math.PI / 6), y2 - headLen * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+  }
+
+  function drawEllipse(ctx, x1, y1, x2, y2) {
+    var cx = (x1 + x2) / 2;
+    var cy = (y1 + y2) / 2;
+    var rx = Math.abs(x2 - x1) / 2;
+    var ry = Math.abs(y2 - y1) / 2;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  function drawFreehand(ctx) {
+    if (freehandPoints.length < 2) return;
+    ctx.beginPath();
+    ctx.moveTo(freehandPoints[0].x, freehandPoints[0].y);
+    for (var i = 1; i < freehandPoints.length; i++) {
+      ctx.lineTo(freehandPoints[i].x, freehandPoints[i].y);
+    }
+    ctx.stroke();
+  }
+
+  // --- Text tool ---
+  function showTextInput(e) {
+    var rect = overlayCanvas.getBoundingClientRect();
+    var displayX = e.clientX - rect.left;
+    var displayY = e.clientY - rect.top;
+
+    textInputEl.style.display = 'block';
+    textInputEl.style.left = displayX + 'px';
+    textInputEl.style.top = displayY + 'px';
+
+    textField.style.color = currentColor;
+    textField.style.fontSize = currentFontSize + 'px';
+    textField.value = '';
+    textField.focus();
+
+    textField.onkeydown = function(ev) {
+      if (ev.key === 'Enter') {
+        ev.preventDefault();
+        placeText(displayX, displayY);
+      }
+      if (ev.key === 'Escape') {
+        textInputEl.style.display = 'none';
+      }
+    };
+    textField.onblur = function() {
+      if (textField.value.trim()) {
+        placeText(displayX, displayY);
+      } else {
+        textInputEl.style.display = 'none';
+      }
+    };
+  }
+
+  function placeText(displayX, displayY) {
+    var text = textField.value.trim();
+    textInputEl.style.display = 'none';
+    if (!text) return;
+
+    var ratio = overlayCanvas.width / overlayCanvas.getBoundingClientRect().width;
+    var cx = displayX * ratio;
+    var cy = displayY * ratio;
+    var fs = scaledFontSize();
+
+    saveState();
+    overlayCtx.font = '700 ' + fs + 'px Inter, "Noto Sans JP", sans-serif';
+    overlayCtx.fillStyle = currentColor;
+    overlayCtx.textBaseline = 'top';
+
+    // Text shadow/outline for readability
+    overlayCtx.strokeStyle = currentColor === '#ffffff' || currentColor === '#f1c40f' ? '#000' : '#fff';
+    overlayCtx.lineWidth = fs * 0.12;
+    overlayCtx.lineJoin = 'round';
+    overlayCtx.strokeText(text, cx, cy);
+    overlayCtx.fillText(text, cx, cy);
+
+    // Replace last saved state with current
+    history.pop();
+    saveState();
+  }
+
+  // --- Undo ---
+  document.getElementById('undoBtn').addEventListener('click', undo);
+  function undo() {
+    if (history.length === 0) return;
+    history.pop();
+    redrawOverlay();
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+      e.preventDefault();
+      undo();
+    }
+  });
+
+  // --- Clear ---
+  document.getElementById('clearBtn').addEventListener('click', function() {
+    history = [];
+    overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+  });
+
+  // --- Save ---
+  document.getElementById('saveBtn').addEventListener('click', function() {
+    var mergeCanvas = document.createElement('canvas');
+    mergeCanvas.width = baseCanvas.width;
+    mergeCanvas.height = baseCanvas.height;
+    var mergeCtx = mergeCanvas.getContext('2d');
+    mergeCtx.drawImage(baseCanvas, 0, 0);
+    mergeCtx.drawImage(overlayCanvas, 0, 0);
+
+    var link = document.createElement('a');
+    link.download = 'annotated_' + Date.now() + '.png';
+    link.href = mergeCanvas.toDataURL('image/png');
+    link.click();
+  });
+
+  // --- Reset ---
+  document.getElementById('resetBtn').addEventListener('click', function() {
+    editorEl.classList.remove('active');
+    dropZone.style.display = '';
+    history = [];
+    loadedImage = null;
+    fileInput.value = '';
+    overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+    baseCtx.clearRect(0, 0, baseCanvas.width, baseCanvas.height);
+  });
+
+})();
+</script>
+</body>
+</html>

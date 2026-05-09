@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Video to GIF</title>
+<meta name="description" content="動画ファイルをGIFアニメーションに変換。範囲・サイズ・フレームレートを指定可能。ブラウザ内で完結。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg-primary: #060606;
+  --bg-secondary: #0f0f0f;
+  --text-primary: #eee;
+  --text-sub: #9a9a9a;
+  --border: #181818;
+  --btn-bg: #fff;
+  --btn-text: #000;
+  --input-bg: #0a0a0a;
+  --drop-border: #444;
+  --progress-bg: #222;
+  --progress-fill: #fff;
+}
+
+[data-theme="light"] {
+  --bg-primary: #f5f3f0;
+  --bg-secondary: #fff;
+  --text-primary: #1a1a1a;
+  --text-sub: #666;
+  --border: #e0ddd8;
+  --btn-bg: #1a1a1a;
+  --btn-text: #fff;
+  --input-bg: #fff;
+  --drop-border: #bbb;
+  --progress-bg: #ddd;
+  --progress-fill: #1a1a1a;
+}
+
+body {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: background 0.3s, color 0.3s;
+}
+
+a { color: var(--text-sub); text-decoration: none; }
+a:hover { color: var(--text-primary); }
+
+.container {
+  max-width: 800px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+nav {
+  padding: 20px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+nav a { font-size: 14px; }
+.theme-toggle {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-sub);
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  transition: all 0.3s;
+}
+.theme-toggle:hover { color: var(--text-primary); border-color: var(--text-sub); }
+
+main {
+  flex: 1;
+  padding: 20px 0 60px;
+}
+
+h1 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.subtitle {
+  color: var(--text-sub);
+  font-size: 14px;
+  margin-bottom: 32px;
+}
+
+.drop-zone {
+  border: 2px dashed var(--drop-border);
+  border-radius: 12px;
+  padding: 80px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-bottom: 24px;
+}
+.drop-zone:hover,
+.drop-zone.dragover {
+  border-color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+.drop-zone p {
+  color: var(--text-sub);
+  font-size: 15px;
+  margin-bottom: 8px;
+}
+.drop-zone .hint {
+  font-size: 12px;
+  color: var(--text-sub);
+  opacity: 0.7;
+}
+
+.hidden { display: none !important; }
+
+.editor {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.video-wrap {
+  position: relative;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #000;
+}
+.video-wrap video {
+  display: block;
+  width: 100%;
+  max-height: 400px;
+  object-fit: contain;
+  background: #000;
+}
+
+.file-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: var(--text-sub);
+}
+.file-info .name {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.file-info button {
+  background: none;
+  border: none;
+  color: var(--text-sub);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  padding: 4px 8px;
+}
+.file-info button:hover { color: var(--text-primary); }
+
+.controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.control-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-sub);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.control-group select,
+.control-group input[type="number"] {
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 14px;
+  appearance: auto;
+}
+.control-group select:focus,
+.control-group input:focus {
+  outline: none;
+  border-color: var(--text-sub);
+}
+
+.range-section {
+  margin-bottom: 20px;
+}
+.range-section label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-sub);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.range-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.range-row input[type="range"] {
+  flex: 1;
+  accent-color: var(--text-primary);
+  height: 6px;
+}
+.range-row .time-input {
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-family: 'Inter', monospace;
+  font-size: 13px;
+  width: 80px;
+  text-align: center;
+}
+.range-row .time-input:focus {
+  outline: none;
+  border-color: var(--text-sub);
+}
+
+.range-info {
+  text-align: right;
+  font-size: 12px;
+  color: var(--text-sub);
+  margin-top: 6px;
+}
+
+.btn-primary {
+  display: block;
+  width: 100%;
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border: none;
+  padding: 14px 24px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btn-primary:hover { opacity: 0.85; }
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.progress-section {
+  margin-top: 20px;
+}
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--progress-bg);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--progress-fill);
+  border-radius: 3px;
+  width: 0%;
+  transition: width 0.2s;
+}
+.progress-text {
+  font-size: 13px;
+  color: var(--text-sub);
+  text-align: center;
+}
+
+.result-section {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+.result-section h2 {
+  font-size: 16px;
+  margin-bottom: 16px;
+}
+.result-section img {
+  max-width: 100%;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  background: #000;
+}
+.result-meta {
+  font-size: 13px;
+  color: var(--text-sub);
+  margin-bottom: 16px;
+}
+.btn-download {
+  display: inline-block;
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border: none;
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+.btn-download:hover { opacity: 0.85; color: var(--btn-text); }
+
+footer {
+  padding: 24px 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-sub);
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 600px) {
+  .controls { grid-template-columns: 1fr; }
+  h1 { font-size: 18px; }
+  .drop-zone { padding: 50px 16px; }
+  .editor { padding: 16px; }
+  .range-row { flex-wrap: wrap; }
+  .range-row input[type="range"] { width: 100%; flex: none; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <nav>
+    <a href="../">&larr; 秘密倉庫に戻る</a>
+    <button class="theme-toggle" id="themeToggle">Light</button>
+  </nav>
+
+  <main>
+    <h1>Video to GIF</h1>
+    <p class="subtitle">動画ファイルをGIFアニメーションに変換</p>
+
+    <div class="drop-zone" id="dropZone">
+      <p>動画ファイルをドロップ、またはクリックして選択</p>
+      <span class="hint">MP4 / WebM / MOV</span>
+      <input type="file" id="fileInput" accept="video/mp4,video/webm,video/quicktime,video/x-m4v,.mp4,.webm,.mov" class="hidden">
+    </div>
+
+    <div class="editor hidden" id="editor">
+      <div class="file-info">
+        <span><span class="name" id="fileName"></span> &mdash; <span id="fileDuration"></span></span>
+        <button id="resetBtn">別の動画を選択</button>
+      </div>
+
+      <div class="video-wrap">
+        <video id="videoEl" playsinline></video>
+      </div>
+
+      <div class="range-section">
+        <label>開始点</label>
+        <div class="range-row">
+          <input type="range" id="startRange" min="0" max="100" step="0.01" value="0">
+          <input type="text" class="time-input" id="startTime" value="0:00.0">
+        </div>
+      </div>
+      <div class="range-section">
+        <label>終了点</label>
+        <div class="range-row">
+          <input type="range" id="endRange" min="0" max="100" step="0.01" value="100">
+          <input type="text" class="time-input" id="endTime" value="0:00.0">
+        </div>
+        <div class="range-info" id="rangeInfo">選択範囲: 0.0秒</div>
+      </div>
+
+      <div class="controls">
+        <div class="control-group">
+          <label>GIF幅</label>
+          <select id="widthSelect">
+            <option value="320">320px</option>
+            <option value="480" selected>480px</option>
+            <option value="640">640px</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>フレームレート</label>
+          <select id="fpsSelect">
+            <option value="5">5 fps</option>
+            <option value="10" selected>10 fps</option>
+            <option value="15">15 fps</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="convertBtn">GIFに変換</button>
+
+      <div class="progress-section hidden" id="progressSection">
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="progress-text" id="progressText">準備中...</div>
+      </div>
+    </div>
+
+    <div class="result-section hidden" id="resultSection">
+      <h2>変換完了</h2>
+      <img id="resultImg" alt="GIF preview">
+      <div class="result-meta" id="resultMeta"></div>
+      <a class="btn-download" id="downloadBtn" download="output.gif">ダウンロード</a>
+    </div>
+  </main>
+
+  <footer>
+    動画はブラウザ内で処理されます。サーバーへのアップロードは行いません。
+  </footer>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // --- Theme ---
+  const themeToggle = document.getElementById('themeToggle');
+  const saved = localStorage.getItem('theme');
+  if (saved === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    themeToggle.textContent = 'Dark';
+  }
+  themeToggle.addEventListener('click', () => {
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    document.documentElement.setAttribute('data-theme', isLight ? '' : 'light');
+    themeToggle.textContent = isLight ? 'Light' : 'Dark';
+    localStorage.setItem('theme', isLight ? 'dark' : 'light');
+  });
+
+  // --- DOM ---
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+  const editor = document.getElementById('editor');
+  const videoEl = document.getElementById('videoEl');
+  const fileName = document.getElementById('fileName');
+  const fileDuration = document.getElementById('fileDuration');
+  const resetBtn = document.getElementById('resetBtn');
+  const startRange = document.getElementById('startRange');
+  const endRange = document.getElementById('endRange');
+  const startTime = document.getElementById('startTime');
+  const endTime = document.getElementById('endTime');
+  const rangeInfo = document.getElementById('rangeInfo');
+  const widthSelect = document.getElementById('widthSelect');
+  const fpsSelect = document.getElementById('fpsSelect');
+  const convertBtn = document.getElementById('convertBtn');
+  const progressSection = document.getElementById('progressSection');
+  const progressFill = document.getElementById('progressFill');
+  const progressText = document.getElementById('progressText');
+  const resultSection = document.getElementById('resultSection');
+  const resultImg = document.getElementById('resultImg');
+  const resultMeta = document.getElementById('resultMeta');
+  const downloadBtn = document.getElementById('downloadBtn');
+
+  let duration = 0;
+  let videoURL = null;
+
+  // --- Drag & Drop ---
+  dropZone.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const f = e.dataTransfer.files[0];
+    if (f && f.type.startsWith('video/')) loadVideo(f);
+  });
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) loadVideo(fileInput.files[0]);
+  });
+
+  resetBtn.addEventListener('click', () => {
+    editor.classList.add('hidden');
+    resultSection.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+    if (videoURL) { URL.revokeObjectURL(videoURL); videoURL = null; }
+    videoEl.src = '';
+    fileInput.value = '';
+  });
+
+  function formatTime(s) {
+    const m = Math.floor(s / 60);
+    const sec = (s % 60).toFixed(1);
+    return m + ':' + (sec < 10 ? '0' : '') + sec;
+  }
+
+  function parseTime(str) {
+    const parts = str.split(':');
+    if (parts.length === 2) return parseFloat(parts[0]) * 60 + parseFloat(parts[1]);
+    return parseFloat(str) || 0;
+  }
+
+  function loadVideo(file) {
+    if (videoURL) URL.revokeObjectURL(videoURL);
+    videoURL = URL.createObjectURL(file);
+    videoEl.src = videoURL;
+    fileName.textContent = file.name;
+
+    videoEl.addEventListener('loadedmetadata', function onMeta() {
+      videoEl.removeEventListener('loadedmetadata', onMeta);
+      duration = videoEl.duration;
+      fileDuration.textContent = formatTime(duration);
+
+      startRange.max = duration;
+      startRange.step = 0.01;
+      startRange.value = 0;
+      endRange.max = duration;
+      endRange.step = 0.01;
+      endRange.value = duration;
+
+      startTime.value = formatTime(0);
+      endTime.value = formatTime(duration);
+      updateRangeInfo();
+
+      dropZone.classList.add('hidden');
+      editor.classList.remove('hidden');
+      resultSection.classList.add('hidden');
+    });
+  }
+
+  function updateRangeInfo() {
+    const s = parseFloat(startRange.value);
+    const e = parseFloat(endRange.value);
+    const d = Math.max(0, e - s);
+    rangeInfo.textContent = '選択範囲: ' + d.toFixed(1) + '秒';
+  }
+
+  startRange.addEventListener('input', () => {
+    let v = parseFloat(startRange.value);
+    if (v > parseFloat(endRange.value)) { v = parseFloat(endRange.value); startRange.value = v; }
+    startTime.value = formatTime(v);
+    videoEl.currentTime = v;
+    updateRangeInfo();
+  });
+
+  endRange.addEventListener('input', () => {
+    let v = parseFloat(endRange.value);
+    if (v < parseFloat(startRange.value)) { v = parseFloat(startRange.value); endRange.value = v; }
+    endTime.value = formatTime(v);
+    videoEl.currentTime = v;
+    updateRangeInfo();
+  });
+
+  startTime.addEventListener('change', () => {
+    let v = parseTime(startTime.value);
+    v = Math.max(0, Math.min(v, parseFloat(endRange.value)));
+    startRange.value = v;
+    startTime.value = formatTime(v);
+    videoEl.currentTime = v;
+    updateRangeInfo();
+  });
+
+  endTime.addEventListener('change', () => {
+    let v = parseTime(endTime.value);
+    v = Math.max(parseFloat(startRange.value), Math.min(v, duration));
+    endRange.value = v;
+    endTime.value = formatTime(v);
+    videoEl.currentTime = v;
+    updateRangeInfo();
+  });
+
+  // ===== GIF Encoder (inline LZW + GIF89a) =====
+  function GifEncoder(width, height, options) {
+    this.width = width;
+    this.height = height;
+    this.delay = options.delay || 100;
+    this.data = [];
+    this.frames = [];
+  }
+
+  GifEncoder.prototype.addFrame = function(imageData) {
+    this.frames.push(imageData);
+  };
+
+  GifEncoder.prototype.encode = function(onProgress) {
+    const out = [];
+    const w = this.width;
+    const h = this.height;
+
+    // Build global color table from first frame (median cut simplified: use all frames' colors, quantize to 256)
+    // Using a simple popularity-based quantizer for speed
+    const palette = this._buildPalette();
+    const colorCount = palette.length / 3;
+    const paletteBits = Math.max(2, Math.ceil(Math.log2(colorCount)));
+    const paletteSize = 1 << paletteBits;
+
+    // GIF Header
+    this._writeString(out, 'GIF89a');
+
+    // Logical Screen Descriptor
+    this._writeShort(out, w);
+    this._writeShort(out, h);
+    // GCT flag=1, color res=7, sort=0, size of GCT
+    out.push(0x80 | ((paletteBits - 1) & 7) | (7 << 4));
+    out.push(0); // bg color index
+    out.push(0); // pixel aspect ratio
+
+    // Global Color Table
+    for (let i = 0; i < paletteSize * 3; i++) {
+      out.push(i < palette.length ? palette[i] : 0);
+    }
+
+    // Netscape Application Extension (for looping)
+    out.push(0x21, 0xFF, 0x0B);
+    this._writeString(out, 'NETSCAPE2.0');
+    out.push(0x03, 0x01);
+    this._writeShort(out, 0); // loop count 0 = infinite
+    out.push(0x00);
+
+    // Frames
+    for (let i = 0; i < this.frames.length; i++) {
+      this._writeFrame(out, this.frames[i], palette, paletteSize, paletteBits);
+      if (onProgress) onProgress((i + 1) / this.frames.length);
+    }
+
+    // Trailer
+    out.push(0x3B);
+
+    return new Uint8Array(out);
+  };
+
+  GifEncoder.prototype._buildPalette = function() {
+    // Sample pixels from frames to build a 256-color palette
+    const colorMap = {};
+    const sampleFrames = Math.min(this.frames.length, 10);
+    const step = Math.max(1, Math.floor(this.frames.length / sampleFrames));
+
+    for (let f = 0; f < this.frames.length; f += step) {
+      const d = this.frames[f];
+      const pixelStep = Math.max(1, Math.floor(d.length / (4 * 2000)));
+      for (let i = 0; i < d.length; i += 4 * pixelStep) {
+        // Quantize to 5 bits per channel for grouping
+        const r = d[i] >> 3;
+        const g = d[i + 1] >> 3;
+        const b = d[i + 2] >> 3;
+        const key = (r << 10) | (g << 5) | b;
+        colorMap[key] = (colorMap[key] || 0) + 1;
+      }
+    }
+
+    // Sort by frequency, take top 255 + 1 reserved
+    const entries = Object.keys(colorMap).map(k => [parseInt(k), colorMap[k]]);
+    entries.sort((a, b) => b[1] - a[1]);
+
+    const palette = [];
+    const count = Math.min(entries.length, 256);
+    for (let i = 0; i < count; i++) {
+      const key = entries[i][0];
+      const r = ((key >> 10) & 31) << 3;
+      const g = ((key >> 5) & 31) << 3;
+      const b = (key & 31) << 3;
+      palette.push(r, g, b);
+    }
+
+    // Pad to at least 256 colors
+    while (palette.length < 256 * 3) {
+      palette.push(0, 0, 0);
+    }
+
+    return palette;
+  };
+
+  GifEncoder.prototype._findClosest = function(palette, r, g, b) {
+    let minDist = Infinity;
+    let idx = 0;
+    for (let i = 0; i < 256; i++) {
+      const pr = palette[i * 3];
+      const pg = palette[i * 3 + 1];
+      const pb = palette[i * 3 + 2];
+      const dr = r - pr;
+      const dg = g - pg;
+      const db = b - pb;
+      const dist = dr * dr + dg * dg + db * db;
+      if (dist < 3) return i; // close enough
+      if (dist < minDist) { minDist = dist; idx = i; }
+    }
+    return idx;
+  };
+
+  GifEncoder.prototype._writeFrame = function(out, imageData, palette, paletteSize, paletteBits) {
+    const w = this.width;
+    const h = this.height;
+
+    // Graphic Control Extension
+    out.push(0x21, 0xF9, 0x04);
+    out.push(0x08); // disposal=2 (restore to background), no transparency
+    this._writeShort(out, Math.round(this.delay / 10)); // delay in 1/100s
+    out.push(0x00); // transparent color index
+    out.push(0x00); // terminator
+
+    // Image Descriptor
+    out.push(0x2C);
+    this._writeShort(out, 0); // left
+    this._writeShort(out, 0); // top
+    this._writeShort(out, w);
+    this._writeShort(out, h);
+    out.push(0x00); // no local color table
+
+    // Build color lookup cache
+    if (!this._colorCache) this._colorCache = {};
+    const cache = this._colorCache;
+
+    // Map pixels to palette indices
+    const pixels = new Uint8Array(w * h);
+    for (let i = 0; i < w * h; i++) {
+      const r = imageData[i * 4] >> 3;
+      const g = imageData[i * 4 + 1] >> 3;
+      const b = imageData[i * 4 + 2] >> 3;
+      const key = (r << 10) | (g << 5) | b;
+      if (cache[key] !== undefined) {
+        pixels[i] = cache[key];
+      } else {
+        const idx = this._findClosest(palette, imageData[i * 4], imageData[i * 4 + 1], imageData[i * 4 + 2]);
+        cache[key] = idx;
+        pixels[i] = idx;
+      }
+    }
+
+    // LZW encode
+    const minCodeSize = paletteBits;
+    this._lzwEncode(out, pixels, minCodeSize);
+  };
+
+  GifEncoder.prototype._lzwEncode = function(out, pixels, minCodeSize) {
+    out.push(minCodeSize);
+
+    const clearCode = 1 << minCodeSize;
+    const eoiCode = clearCode + 1;
+    let codeSize = minCodeSize + 1;
+    let nextCode = eoiCode + 1;
+    const maxCodeSize = 12;
+    const maxCode = 1 << maxCodeSize;
+
+    // Sub-block buffer
+    const subBlocks = [];
+    let curByte = 0;
+    let curBit = 0;
+    const subBlock = [];
+
+    function writeBits(code, size) {
+      curByte |= (code << curBit);
+      curBit += size;
+      while (curBit >= 8) {
+        subBlock.push(curByte & 0xFF);
+        curByte >>= 8;
+        curBit -= 8;
+        if (subBlock.length === 255) {
+          subBlocks.push(subBlock.length);
+          for (let i = 0; i < subBlock.length; i++) subBlocks.push(subBlock[i]);
+          subBlock.length = 0;
+        }
+      }
+    }
+
+    // Use a flat array as hash table for LZW dictionary
+    // Key: prefix_code * 256 + suffix_byte -> code
+    const HASH_SIZE = 65536;
+    const hashTable = new Int32Array(HASH_SIZE).fill(-1);
+
+    function hashKey(prefix, suffix) {
+      return ((prefix * 259 + suffix) & 0x7FFFFFFF) % HASH_SIZE;
+    }
+
+    function hashLookup(prefix, suffix) {
+      let h = hashKey(prefix, suffix);
+      while (true) {
+        if (hashTable[h] === -1) return -1;
+        // decode stored value
+        const stored = hashTable[h];
+        const sp = stored >>> 8;
+        const ss = stored & 0xFF;
+        if (sp === prefix && ss === suffix) return h;
+        h = (h + 1) % HASH_SIZE;
+      }
+    }
+
+    const hashCodes = new Int32Array(HASH_SIZE).fill(-1);
+
+    function hashInsert(prefix, suffix, code) {
+      let h = hashKey(prefix, suffix);
+      while (hashTable[h] !== -1) {
+        h = (h + 1) % HASH_SIZE;
+      }
+      hashTable[h] = (prefix << 8) | suffix;
+      hashCodes[h] = code;
+    }
+
+    function hashGet(prefix, suffix) {
+      let h = hashKey(prefix, suffix);
+      while (true) {
+        if (hashTable[h] === -1) return -1;
+        const stored = hashTable[h];
+        const sp = stored >>> 8;
+        const ss = stored & 0xFF;
+        if (sp === prefix && ss === suffix) return hashCodes[h];
+        h = (h + 1) % HASH_SIZE;
+      }
+    }
+
+    function resetDict() {
+      hashTable.fill(-1);
+      hashCodes.fill(-1);
+      codeSize = minCodeSize + 1;
+      nextCode = eoiCode + 1;
+    }
+
+    // Write clear code
+    writeBits(clearCode, codeSize);
+    resetDict();
+
+    if (pixels.length === 0) {
+      writeBits(eoiCode, codeSize);
+    } else {
+      let prefix = pixels[0];
+      for (let i = 1; i < pixels.length; i++) {
+        const suffix = pixels[i];
+        const existing = hashGet(prefix, suffix);
+        if (existing !== -1) {
+          prefix = existing;
+        } else {
+          writeBits(prefix, codeSize);
+          if (nextCode < maxCode) {
+            hashInsert(prefix, suffix, nextCode);
+            nextCode++;
+            if (nextCode > (1 << codeSize) && codeSize < maxCodeSize) {
+              codeSize++;
+            }
+          } else {
+            writeBits(clearCode, codeSize);
+            resetDict();
+          }
+          prefix = suffix;
+        }
+      }
+      writeBits(prefix, codeSize);
+      writeBits(eoiCode, codeSize);
+    }
+
+    // Flush remaining bits
+    if (curBit > 0) {
+      subBlock.push(curByte & 0xFF);
+    }
+    if (subBlock.length > 0) {
+      subBlocks.push(subBlock.length);
+      for (let i = 0; i < subBlock.length; i++) subBlocks.push(subBlock[i]);
+    }
+
+    for (let i = 0; i < subBlocks.length; i++) {
+      out.push(subBlocks[i]);
+    }
+
+    // Block terminator
+    out.push(0x00);
+  };
+
+  GifEncoder.prototype._writeString = function(out, str) {
+    for (let i = 0; i < str.length; i++) out.push(str.charCodeAt(i));
+  };
+
+  GifEncoder.prototype._writeShort = function(out, val) {
+    out.push(val & 0xFF);
+    out.push((val >> 8) & 0xFF);
+  };
+
+  // ===== Conversion =====
+  let converting = false;
+
+  convertBtn.addEventListener('click', async () => {
+    if (converting) return;
+    converting = true;
+    convertBtn.disabled = true;
+    progressSection.classList.remove('hidden');
+    resultSection.classList.add('hidden');
+    progressFill.style.width = '0%';
+    progressText.textContent = 'フレームを取得中...';
+
+    try {
+      const startSec = parseFloat(startRange.value);
+      const endSec = parseFloat(endRange.value);
+      const gifWidth = parseInt(widthSelect.value);
+      const fps = parseInt(fpsSelect.value);
+      const interval = 1000 / fps;
+
+      // Compute dimensions
+      const vw = videoEl.videoWidth;
+      const vh = videoEl.videoHeight;
+      const gifHeight = Math.round((gifWidth / vw) * vh);
+
+      const canvas = document.createElement('canvas');
+      canvas.width = gifWidth;
+      canvas.height = gifHeight;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+      // Collect frames by seeking
+      const totalFrames = Math.ceil((endSec - startSec) * fps);
+      if (totalFrames <= 0 || totalFrames > 600) {
+        alert(totalFrames <= 0 ? '範囲が短すぎます。' : 'フレーム数が多すぎます（最大600フレーム）。範囲を短くするか、fpsを下げてください。');
+        converting = false;
+        convertBtn.disabled = false;
+        progressSection.classList.add('hidden');
+        return;
+      }
+
+      const frames = [];
+      const tempVideo = document.createElement('video');
+      tempVideo.muted = true;
+      tempVideo.playsInline = true;
+      tempVideo.preload = 'auto';
+      tempVideo.src = videoURL;
+
+      await new Promise((resolve, reject) => {
+        tempVideo.addEventListener('loadeddata', resolve, { once: true });
+        tempVideo.addEventListener('error', reject, { once: true });
+      });
+
+      for (let i = 0; i < totalFrames; i++) {
+        const t = startSec + (i / fps);
+        if (t > endSec) break;
+
+        tempVideo.currentTime = t;
+        await new Promise(resolve => {
+          tempVideo.addEventListener('seeked', resolve, { once: true });
+        });
+
+        ctx.drawImage(tempVideo, 0, 0, gifWidth, gifHeight);
+        const imgData = ctx.getImageData(0, 0, gifWidth, gifHeight);
+        frames.push(imgData.data);
+
+        const pct = Math.round(((i + 1) / totalFrames) * 50);
+        progressFill.style.width = pct + '%';
+        progressText.textContent = 'フレーム取得中... ' + (i + 1) + '/' + totalFrames;
+
+        // Yield to UI
+        await new Promise(r => setTimeout(r, 0));
+      }
+
+      // Encode GIF
+      progressText.textContent = 'GIFエンコード中...';
+      progressFill.style.width = '50%';
+
+      await new Promise(r => setTimeout(r, 50));
+
+      const encoder = new GifEncoder(gifWidth, gifHeight, { delay: interval });
+      for (const frame of frames) {
+        encoder.addFrame(frame);
+      }
+
+      const gifData = encoder.encode((p) => {
+        const pct = 50 + Math.round(p * 50);
+        progressFill.style.width = pct + '%';
+        progressText.textContent = 'エンコード中... ' + Math.round(p * 100) + '%';
+      });
+
+      const blob = new Blob([gifData], { type: 'image/gif' });
+      const url = URL.createObjectURL(blob);
+
+      resultImg.src = url;
+      const sizeMB = (blob.size / (1024 * 1024)).toFixed(2);
+      resultMeta.textContent = gifWidth + 'x' + gifHeight + 'px / ' + frames.length + 'フレーム / ' + sizeMB + ' MB';
+      downloadBtn.href = url;
+      downloadBtn.download = 'output.gif';
+
+      progressFill.style.width = '100%';
+      progressText.textContent = '完了';
+      resultSection.classList.remove('hidden');
+
+    } catch (err) {
+      console.error(err);
+      progressText.textContent = 'エラー: ' + err.message;
+    } finally {
+      converting = false;
+      convertBtn.disabled = false;
+    }
+  });
+
+})();
+</script>
+</body>
+</html>

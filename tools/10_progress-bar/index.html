@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>プログレスバー生成 — CLI風プログレスバーを画像で出力</title>
+<meta name="description" content="CLI風のプログレスバーを作成し、画像やテキストでダウンロード。SNS投稿やプロフィールに使えるターミナル風デザイン。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;700&family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg-primary: #060606;
+  --bg-secondary: #0f0f0f;
+  --text-primary: #eee;
+  --text-sub: #9a9a9a;
+  --border: #181818;
+  --btn-bg: #fff;
+  --btn-text: #000;
+  --card-bg: #111;
+  --card-border: #1a1a1a;
+  --input-bg: #0a0a0a;
+  --input-border: #333;
+  --accent: #555;
+  --slider-track: #333;
+  --slider-thumb: #fff;
+}
+
+[data-theme="light"] {
+  --bg-primary: #f5f3f0;
+  --bg-secondary: #fff;
+  --text-primary: #1a1a1a;
+  --text-sub: #666;
+  --border: #e0ddd8;
+  --btn-bg: #1a1a1a;
+  --btn-text: #fff;
+  --card-bg: #fff;
+  --card-border: #e0ddd8;
+  --input-bg: #fff;
+  --input-border: #ccc;
+  --accent: #999;
+  --slider-track: #ccc;
+  --slider-thumb: #1a1a1a;
+}
+
+body {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: background .2s, color .2s;
+}
+
+.container {
+  max-width: 700px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px 20px 48px;
+  flex: 1;
+}
+
+/* Nav */
+.nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.nav a {
+  color: var(--text-sub);
+  text-decoration: none;
+  font-size: 13px;
+  transition: color .15s;
+}
+
+.nav a:hover { color: var(--text-primary); }
+
+.theme-toggle {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-sub);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  transition: all .15s;
+}
+
+.theme-toggle:hover {
+  color: var(--text-primary);
+  border-color: var(--accent);
+}
+
+/* Title */
+h1 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  color: var(--text-sub);
+  font-size: 13px;
+  margin-bottom: 28px;
+}
+
+/* Section labels */
+.section-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-sub);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom: 12px;
+}
+
+/* Controls */
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.control-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.control-row label {
+  font-size: 13px;
+  color: var(--text-sub);
+  min-width: 64px;
+  flex-shrink: 0;
+}
+
+.control-row input[type="text"],
+.control-row select {
+  flex: 1;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  color: var(--text-primary);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color .15s;
+}
+
+.control-row input[type="text"]:focus,
+.control-row select:focus {
+  border-color: var(--accent);
+}
+
+.control-row select {
+  cursor: pointer;
+}
+
+/* Items */
+.items-section {
+  margin-bottom: 28px;
+}
+
+.item-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  transition: background .15s, border-color .15s;
+}
+
+.item-row input[type="text"] {
+  width: 120px;
+  flex-shrink: 0;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  color: var(--text-primary);
+  padding: 6px 10px;
+  border-radius: 5px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color .15s;
+}
+
+.item-row input[type="text"]:focus {
+  border-color: var(--accent);
+}
+
+.item-row input[type="range"] {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  background: var(--slider-track);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+}
+
+.item-row input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--slider-thumb);
+  cursor: pointer;
+  border: none;
+}
+
+.item-row input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--slider-thumb);
+  cursor: pointer;
+  border: none;
+}
+
+.pct-display {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: var(--text-sub);
+  min-width: 38px;
+  text-align: right;
+}
+
+.delete-item {
+  background: none;
+  border: none;
+  color: var(--text-sub);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  transition: color .15s;
+}
+
+.delete-item:hover { color: #e55; }
+
+.add-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px dashed var(--border);
+  color: var(--text-sub);
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  transition: all .15s;
+}
+
+.add-item:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+/* Preview */
+.preview-section {
+  margin-bottom: 24px;
+}
+
+.preview-wrapper {
+  padding: 24px;
+  border-radius: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 180px;
+  transition: background .2s;
+}
+
+.preview-box {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  line-height: 1.7;
+  white-space: pre;
+  user-select: all;
+}
+
+/* Action buttons */
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all .15s;
+  background: var(--btn-bg);
+  color: var(--btn-text);
+}
+
+.btn:hover { opacity: .85; }
+
+.btn:active { transform: scale(.97); }
+
+.btn-secondary {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+.btn-secondary:hover {
+  border-color: var(--accent);
+}
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s, transform .2s;
+  z-index: 100;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+@media (max-width: 600px) {
+  .container { padding: 16px 14px 40px; }
+  h1 { font-size: 18px; }
+  .item-row { flex-wrap: wrap; }
+  .item-row input[type="text"] { width: 100%; }
+  .item-row input[type="range"] { min-width: 0; }
+  .preview-box { font-size: 11px; }
+  .actions { flex-direction: column; }
+  .btn { width: 100%; text-align: center; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <!-- Nav -->
+  <nav class="nav">
+    <a href="../">&larr; 秘密倉庫に戻る</a>
+    <button class="theme-toggle" id="themeToggle">Light</button>
+  </nav>
+
+  <h1>Progress Bar Generator</h1>
+  <p class="subtitle">CLI風プログレスバーを作成して画像でダウンロード</p>
+
+  <!-- Controls -->
+  <div class="controls">
+    <div class="control-row">
+      <label for="titleInput">タイトル</label>
+      <input type="text" id="titleInput" value="progress" placeholder="progress">
+    </div>
+    <div class="control-row">
+      <label for="themeSelect">テーマ</label>
+      <select id="themeSelect">
+        <option value="claude">Claude Code</option>
+        <option value="matrix">Matrix</option>
+        <option value="retro">Retro</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Items -->
+  <div class="items-section">
+    <div class="section-label">Items</div>
+    <div id="itemsContainer"></div>
+    <button class="add-item" id="addBtn">+ 項目を追加</button>
+  </div>
+
+  <!-- Preview -->
+  <div class="preview-section">
+    <div class="section-label">Preview</div>
+    <div class="preview-wrapper" id="previewWrapper">
+      <div class="preview-box" id="previewBox"></div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="actions">
+    <button class="btn" id="downloadBtn">画像でダウンロード</button>
+    <button class="btn btn-secondary" id="copyBtn">テキストでコピー</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+  'use strict';
+
+  // --- Theme (UI light/dark) ---
+  const html = document.documentElement;
+  const themeBtn = document.getElementById('themeToggle');
+  const savedTheme = localStorage.getItem('pb-ui-theme') || 'dark';
+  applyUITheme(savedTheme);
+
+  function applyUITheme(t) {
+    if (t === 'light') {
+      html.setAttribute('data-theme', 'light');
+      themeBtn.textContent = 'Dark';
+    } else {
+      html.removeAttribute('data-theme');
+      themeBtn.textContent = 'Light';
+    }
+    localStorage.setItem('pb-ui-theme', t);
+  }
+
+  themeBtn.addEventListener('click', function() {
+    const cur = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    applyUITheme(cur);
+  });
+
+  // --- Bar themes ---
+  const BAR_THEMES = {
+    claude: { bg: '#1a1a2e', fg: '#e0e0e0', accent: '#e0e0e0', sub: '#666', name: 'Claude Code' },
+    matrix: { bg: '#0a0a0a', fg: '#00ff41', accent: '#00ff41', sub: '#005a15', name: 'Matrix' },
+    retro:  { bg: '#0a0800', fg: '#ffb000', accent: '#ffb000', sub: '#664800', name: 'Retro' }
+  };
+
+  // --- State ---
+  let items = [
+    { label: '2026\u5E74', pct: 34 },
+    { label: '\u8CAF\u91D1\u76EE\u6A19', pct: 50 }
+  ];
+
+  const itemsContainer = document.getElementById('itemsContainer');
+  const previewBox = document.getElementById('previewBox');
+  const previewWrapper = document.getElementById('previewWrapper');
+  const titleInput = document.getElementById('titleInput');
+  const themeSelect = document.getElementById('themeSelect');
+  const addBtn = document.getElementById('addBtn');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const copyBtn = document.getElementById('copyBtn');
+  const toast = document.getElementById('toast');
+
+  function renderItems() {
+    itemsContainer.innerHTML = '';
+    items.forEach(function(item, i) {
+      const row = document.createElement('div');
+      row.className = 'item-row';
+
+      const labelInput = document.createElement('input');
+      labelInput.type = 'text';
+      labelInput.value = item.label;
+      labelInput.placeholder = '\u30E9\u30D9\u30EB';
+      labelInput.addEventListener('input', function() {
+        items[i].label = this.value;
+        renderPreview();
+      });
+
+      const slider = document.createElement('input');
+      slider.type = 'range';
+      slider.min = 0;
+      slider.max = 100;
+      slider.value = item.pct;
+      slider.addEventListener('input', function() {
+        items[i].pct = parseInt(this.value);
+        pctSpan.textContent = this.value + '%';
+        renderPreview();
+      });
+
+      const pctSpan = document.createElement('span');
+      pctSpan.className = 'pct-display';
+      pctSpan.textContent = item.pct + '%';
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'delete-item';
+      delBtn.textContent = '\u00D7';
+      delBtn.title = '\u524A\u9664';
+      delBtn.addEventListener('click', function() {
+        if (items.length <= 1) return;
+        items.splice(i, 1);
+        renderItems();
+        renderPreview();
+      });
+
+      row.appendChild(labelInput);
+      row.appendChild(slider);
+      row.appendChild(pctSpan);
+      row.appendChild(delBtn);
+      itemsContainer.appendChild(row);
+    });
+
+    // Toggle add button
+    addBtn.style.display = items.length >= 5 ? 'none' : '';
+  }
+
+  function getBarText() {
+    const barLen = 12;
+    const title = titleInput.value || 'progress';
+    const theme = BAR_THEMES[themeSelect.value];
+
+    // Calculate max label width for alignment
+    let maxLabelLen = 0;
+    items.forEach(function(item) {
+      // Count chars: ASCII=1, others=2
+      let len = 0;
+      for (let c = 0; c < item.label.length; c++) {
+        len += item.label.charCodeAt(c) > 127 ? 2 : 1;
+      }
+      if (len > maxLabelLen) maxLabelLen = len;
+    });
+    maxLabelLen = Math.max(maxLabelLen, 4);
+
+    // Build lines
+    var lines = [];
+    items.forEach(function(item) {
+      let labelLen = 0;
+      for (let c = 0; c < item.label.length; c++) {
+        labelLen += item.label.charCodeAt(c) > 127 ? 2 : 1;
+      }
+      const padCount = maxLabelLen - labelLen;
+      const padded = item.label + ' '.repeat(padCount);
+
+      const filled = Math.round(item.pct / 100 * barLen);
+      const empty = barLen - filled;
+      const bar = '\u2588'.repeat(filled) + '\u2591'.repeat(empty);
+
+      const pctStr = (item.pct + '%').padStart(4, ' ');
+      lines.push('  ' + padded + '   ' + bar + '  ' + pctStr);
+    });
+
+    // Content width
+    const contentWidth = lines.reduce(function(max, l) {
+      let w = 0;
+      for (let c = 0; c < l.length; c++) {
+        w += l.charCodeAt(c) > 127 ? 2 : 1;
+      }
+      return Math.max(max, w);
+    }, 0);
+
+    const footer = '  \u25B8 generated by daisukeman base';
+    let footerLen = 0;
+    for (let c = 0; c < footer.length; c++) {
+      footerLen += footer.charCodeAt(c) > 127 ? 2 : 1;
+    }
+
+    const innerWidth = Math.max(contentWidth, footerLen) + 4;
+
+    // Title header
+    const titleDisplay = ' ' + title + ' ';
+    let titleDisplayLen = 0;
+    for (let c = 0; c < titleDisplay.length; c++) {
+      titleDisplayLen += titleDisplay.charCodeAt(c) > 127 ? 2 : 1;
+    }
+    const headerDash = Math.max(innerWidth - titleDisplayLen - 1, 2);
+    const topLine = '\u250C\u2500' + titleDisplay + '\u2500'.repeat(headerDash) + '\u2510';
+    const bottomLine = '\u2514' + '\u2500'.repeat(innerWidth + 1) + '\u2518';
+
+    // Pad each content line
+    function padLine(text) {
+      let w = 0;
+      for (let c = 0; c < text.length; c++) {
+        w += text.charCodeAt(c) > 127 ? 2 : 1;
+      }
+      const gap = innerWidth - w;
+      return '\u2502' + text + ' '.repeat(Math.max(gap, 0)) + ' \u2502';
+    }
+
+    const emptyLine = '\u2502' + ' '.repeat(innerWidth + 1) + '\u2502';
+
+    var result = [topLine, emptyLine];
+    lines.forEach(function(l) { result.push(padLine(l)); });
+    result.push(emptyLine);
+    result.push(padLine(footer));
+    result.push(bottomLine);
+
+    return result.join('\n');
+  }
+
+  function renderPreview() {
+    const theme = BAR_THEMES[themeSelect.value];
+    previewWrapper.style.background = theme.bg;
+    previewBox.style.color = theme.fg;
+    previewBox.textContent = getBarText();
+  }
+
+  // --- Events ---
+  titleInput.addEventListener('input', renderPreview);
+  themeSelect.addEventListener('change', renderPreview);
+
+  addBtn.addEventListener('click', function() {
+    if (items.length >= 5) return;
+    items.push({ label: '', pct: 50 });
+    renderItems();
+    renderPreview();
+    // Focus the new label input
+    var inputs = itemsContainer.querySelectorAll('input[type="text"]');
+    if (inputs.length) inputs[inputs.length - 1].focus();
+  });
+
+  // --- Toast ---
+  let toastTimer;
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function() { toast.classList.remove('show'); }, 2000);
+  }
+
+  // --- Copy text ---
+  copyBtn.addEventListener('click', function() {
+    const text = getBarText();
+    navigator.clipboard.writeText(text).then(function() {
+      showToast('[OK] \u30AF\u30EA\u30C3\u30D7\u30DC\u30FC\u30C9\u306B\u30B3\u30D4\u30FC\u3057\u307E\u3057\u305F');
+    }).catch(function() {
+      showToast('[ERROR] \u30B3\u30D4\u30FC\u306B\u5931\u6557\u3057\u307E\u3057\u305F');
+    });
+  });
+
+  // --- Download image ---
+  downloadBtn.addEventListener('click', function() {
+    downloadBtn.disabled = true;
+    downloadBtn.textContent = '\u751F\u6210\u4E2D...';
+
+    // Wait for font to be ready
+    document.fonts.ready.then(function() {
+      try {
+        renderToCanvas();
+      } catch(e) {
+        showToast('[ERROR] \u753B\u50CF\u751F\u6210\u306B\u5931\u6557\u3057\u307E\u3057\u305F');
+      }
+      downloadBtn.disabled = false;
+      downloadBtn.textContent = '\u753B\u50CF\u3067\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9';
+    });
+  });
+
+  function renderToCanvas() {
+    const theme = BAR_THEMES[themeSelect.value];
+    const text = getBarText();
+    const lines = text.split('\n');
+    const scale = 2; // Retina
+
+    const fontSize = 16;
+    const lineHeight = fontSize * 1.7;
+    const paddingX = 48;
+    const paddingY = 36;
+    const font = fontSize + 'px "JetBrains Mono", monospace';
+
+    // Measure text width using canvas
+    const measureCanvas = document.createElement('canvas');
+    const mCtx = measureCanvas.getContext('2d');
+    mCtx.font = font;
+
+    let maxWidth = 0;
+    lines.forEach(function(line) {
+      const w = mCtx.measureText(line).width;
+      if (w > maxWidth) maxWidth = w;
+    });
+
+    const canvasW = Math.ceil(maxWidth + paddingX * 2);
+    const canvasH = Math.ceil(lines.length * lineHeight + paddingY * 2);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = canvasW * scale;
+    canvas.height = canvasH * scale;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(scale, scale);
+
+    // Background
+    ctx.fillStyle = theme.bg;
+    ctx.fillRect(0, 0, canvasW, canvasH);
+
+    // Text
+    ctx.font = font;
+    ctx.fillStyle = theme.fg;
+    ctx.textBaseline = 'top';
+
+    lines.forEach(function(line, i) {
+      ctx.fillText(line, paddingX, paddingY + i * lineHeight);
+    });
+
+    // Download
+    canvas.toBlob(function(blob) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'progress-bar.png';
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('[OK] \u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3057\u307E\u3057\u305F');
+    }, 'image/png');
+  }
+
+  // --- Init ---
+  renderItems();
+  renderPreview();
+
+})();
+</script>
+</body>
+</html>
