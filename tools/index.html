@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>秘密倉庫 — ダイスケマンの道具たち | ダイスケマンBASE</title>
-  <meta name="description" content="43歳の非エンジニアがClaude Codeで作ったツール置き場。全部無料。全部使える。">
+  <meta name="description" content="40代の非エンジニアがClaude Codeで作ったツール置き場。全部無料。全部使える。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+JP:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -29,7 +29,7 @@
     <p class="list-label">Secret Storage</p>
     <h1 class="list-title">ダイスケマンの<span class="accent">秘密倉庫</span></h1>
     <p class="list-desc">
-      43歳の非エンジニアが Claude Code で作った道具たち。<br>
+      40代の非エンジニアが Claude Code で作った道具たち。<br>
       全部無料。説明不要。触ればわかる。
     </p>
     <div class="list-count">
@@ -39,31 +39,45 @@
 
   <div class="tools-grid" id="toolsGrid">
 
-    <a href="01_side-job-fit/" class="tool-card reveal">
-      <div class="tool-card-icon">
-        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    <div class="tool-card reveal">
+      <div class="tool-card-header">
+        <div class="tool-card-icon">
+          <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <div class="tool-card-info">
+          <span class="tool-card-category">Diagnosis</span>
+          <div class="tool-card-title">副業適性診断</div>
+          <div class="tool-card-desc">15問であなたに向いている副業タイプがわかる。</div>
+        </div>
       </div>
-      <span class="tool-card-category">Diagnosis</span>
-      <div class="tool-card-title">副業適性診断</div>
-      <div class="tool-card-desc">15問であなたに向いている副業タイプがわかる。</div>
-      <div class="tool-card-footer">
-        <span class="tool-card-time">No.01</span>
-        <span class="tool-card-arrow">使う &rarr;</span>
+      <div class="tool-card-video" data-video="ReIkKa9quqI">
+        <img src="01_side-job-fit/thumb.jpg" alt="副業適性診断の使い方">
+        <div class="tool-card-play">▶</div>
       </div>
-    </a>
+      <div class="tool-card-actions">
+        <a href="01_side-job-fit/" class="tool-card-btn">START</a>
+      </div>
+    </div>
 
-    <a href="02_pomodoro/" class="tool-card reveal rv1">
-      <div class="tool-card-icon">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <div class="tool-card reveal rv1">
+      <div class="tool-card-header">
+        <div class="tool-card-icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div class="tool-card-info">
+          <span class="tool-card-category">Timer</span>
+          <div class="tool-card-title">カスタムポモドーロ</div>
+          <div class="tool-card-desc">時間・背景・字体・BGMを自分好みにカスタマイズ。</div>
+        </div>
       </div>
-      <span class="tool-card-category">Timer</span>
-      <div class="tool-card-title">カスタムポモドーロ</div>
-      <div class="tool-card-desc">時間・背景・字体・BGMを自分好みにカスタマイズ。</div>
-      <div class="tool-card-footer">
-        <span class="tool-card-time">No.02</span>
-        <span class="tool-card-arrow">使う &rarr;</span>
+      <div class="tool-card-video" data-video="7hPVk_x3aqQ">
+        <img src="02_pomodoro/thumb.jpg" alt="カスタムポモドーロの使い方">
+        <div class="tool-card-play">▶</div>
       </div>
-    </a>
+      <div class="tool-card-actions">
+        <a href="02_pomodoro/" class="tool-card-btn">START</a>
+      </div>
+    </div>
 
     <!-- 03_audio-trim, 04_reverse-qr は準備中。公開時にここに追加 -->
 
@@ -100,6 +114,27 @@
     const grid = document.getElementById('toolsGrid');
     const count = grid.querySelectorAll('.tool-card:not(.coming-soon)').length;
     document.getElementById('toolCount').textContent = count;
+
+    // Click thumbnail to play video inline
+    document.querySelectorAll('.tool-card-video[data-video]').forEach(el => {
+      el.style.cursor = 'pointer';
+      el.addEventListener('click', () => {
+        const videoId = el.getAttribute('data-video');
+        const iframe = document.createElement('iframe');
+        iframe.src = 'https://www.youtube.com/embed/' + videoId + '?autoplay=1';
+        iframe.setAttribute('allowfullscreen', '');
+        iframe.setAttribute('allow', 'autoplay; fullscreen');
+        iframe.style.width = '100%';
+        iframe.style.height = '100%';
+        iframe.style.border = 'none';
+        iframe.style.position = 'absolute';
+        iframe.style.top = '0';
+        iframe.style.left = '0';
+        el.style.position = 'relative';
+        el.innerHTML = '';
+        el.appendChild(iframe);
+      });
+    });
   </script>
 
 </body>

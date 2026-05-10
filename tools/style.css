@@ -168,11 +168,63 @@ nav {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 28px 24px;
+  padding: 0;
   position: relative; overflow: hidden;
   transition: all 0.4s var(--ease);
   display: flex; flex-direction: column;
   color: inherit;
+}
+
+.tool-card-header {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 20px 20px 14px;
+}
+
+.tool-card-info { flex: 1; }
+
+.tool-card-video {
+  display: block; position: relative;
+  margin: 0 12px; border-radius: 6px;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+}
+
+.tool-card-video img {
+  width: 100%; height: 100%; display: block;
+  object-fit: cover;
+  transition: transform 0.3s var(--ease);
+}
+
+.tool-card-video:hover img { transform: scale(1.03); }
+
+.tool-card-play {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 48px; height: 48px;
+  background: rgba(0,0,0,0.6);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; color: #fff;
+  transition: background 0.3s;
+}
+
+.tool-card-video:hover .tool-card-play { background: rgba(201,123,91,0.8); }
+
+.tool-card-actions {
+  padding: 14px 20px 18px;
+}
+
+.tool-card-btn {
+  display: block; text-align: center;
+  background: #E17850; color: #000;
+  font-weight: 700; font-size: 0.82rem;
+  padding: 10px; border-radius: 6px;
+  text-decoration: none;
+  transition: all 0.3s var(--ease);
+}
+
+.tool-card-btn:hover {
+  background: #c96840; transform: translateY(-1px);
 }
 
 .tool-card::before {

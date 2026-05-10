@@ -195,6 +195,22 @@ header p {
 .size-btn:hover { color: var(--text-primary); }
 .size-btn.active { background: var(--tool-active); color: var(--text-primary); border-color: var(--toolbar-border); }
 
+/* Outline toggle */
+.outline-toggle {
+  background: none;
+  border: 1px solid var(--toolbar-border);
+  border-radius: 4px;
+  color: var(--text-sub);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.7rem;
+  padding: 4px 8px;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.outline-toggle:hover { color: var(--text-primary); }
+.outline-toggle.active { background: var(--tool-active); color: var(--text-primary); border-color: var(--toolbar-border); }
+
 /* Canvas wrapper */
 .canvas-wrapper {
   position: relative;
@@ -205,6 +221,10 @@ header p {
   cursor: crosshair;
   line-height: 0;
 }
+.canvas-wrapper.cursor-select { cursor: default; }
+.canvas-wrapper.cursor-grab { cursor: grab; }
+.canvas-wrapper.cursor-grabbing { cursor: grabbing; }
+.canvas-wrapper.cursor-nwse-resize { cursor: nwse-resize; }
 .canvas-wrapper canvas {
   display: block;
   max-width: 100%;
@@ -305,7 +325,13 @@ footer {
     <div class="toolbar" id="toolbar">
       <!-- Drawing tools -->
       <div class="toolbar-group">
-        <button class="tool-btn active" data-tool="arrow" title="矢印">
+        <button class="tool-btn active" data-tool="select" title="選択 / 移動">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 4l7 18 3-7 7-3z"/>
+            <line x1="15" y1="15" x2="20" y2="20"/>
+          </svg>
+        </button>
+        <button class="tool-btn" data-tool="arrow" title="矢印">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="5" y1="19" x2="19" y2="5"/>
             <polyline points="12 5 19 5 19 12"/>
@@ -365,6 +391,13 @@ footer {
       </div>
       <div class="toolbar-sep" id="fontSizeSep" style="display:none"></div>
 
+      <!-- Outline toggle -->
+      <div class="toolbar-group">
+        <button class="outline-toggle active" id="outlineToggle" title="テキスト縁取り切り替え">縁あり</button>
+      </div>
+
+      <div class="toolbar-sep"></div>
+
       <!-- Undo / Clear -->
       <div class="toolbar-group">
         <button class="tool-btn" id="undoBtn" title="元に戻す (Ctrl+Z)">
@@ -413,14 +446,14 @@ footer {
   'use strict';
 
   // --- Theme ---
-  const themeToggle = document.getElementById('themeToggle');
-  const savedTheme = localStorage.getItem('annotate-theme') || 'dark';
+  var themeToggle = document.getElementById('themeToggle');
+  var savedTheme = localStorage.getItem('annotate-theme') || 'dark';
   if (savedTheme === 'light') {
     document.documentElement.setAttribute('data-theme', 'light');
     themeToggle.textContent = 'Dark';
   }
   themeToggle.addEventListener('click', function() {
-    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    var isLight = document.documentElement.getAttribute('data-theme') === 'light';
     if (isLight) {
       document.documentElement.removeAttribute('data-theme');
       themeToggle.textContent = 'Light';
@@ -433,31 +466,43 @@ footer {
   });
 
   // --- Elements ---
-  const dropZone = document.getElementById('dropZone');
-  const fileInput = document.getElementById('fileInput');
-  const editorEl = document.getElementById('editor');
-  const baseCanvas = document.getElementById('baseCanvas');
-  const overlayCanvas = document.getElementById('overlayCanvas');
-  const canvasWrapper = document.getElementById('canvasWrapper');
-  const textInputEl = document.getElementById('textInput');
-  const textField = document.getElementById('textField');
-  const fontSizeGroup = document.getElementById('fontSizeGroup');
-  const fontSizeSep = document.getElementById('fontSizeSep');
+  var dropZone = document.getElementById('dropZone');
+  var fileInput = document.getElementById('fileInput');
+  var editorEl = document.getElementById('editor');
+  var baseCanvas = document.getElementById('baseCanvas');
+  var overlayCanvas = document.getElementById('overlayCanvas');
+  var canvasWrapper = document.getElementById('canvasWrapper');
+  var textInputEl = document.getElementById('textInput');
+  var textField = document.getElementById('textField');
+  var fontSizeGroup = document.getElementById('fontSizeGroup');
+  var fontSizeSep = document.getElementById('fontSizeSep');
 
-  const baseCtx = baseCanvas.getContext('2d');
-  const overlayCtx = overlayCanvas.getContext('2d');
+  var baseCtx = baseCanvas.getContext('2d');
+  var overlayCtx = overlayCanvas.getContext('2d');
 
   // --- State ---
-  let currentTool = 'arrow';
-  let currentColor = '#e74c3c';
-  let currentWidth = 4;
-  let currentFontSize = 24;
-  let history = []; // array of ImageData
-  let isDrawing = false;
-  let startX = 0, startY = 0;
-  let freehandPoints = [];
-  let loadedImage = null;
-  let scaleRatio = 1; // display pixels to canvas pixels
+  var currentTool = 'select';
+  var currentColor = '#e74c3c';
+  var currentWidth = 4;
+  var currentFontSize = 24;
+  var objects = [];       // array of drawing objects
+  var isDrawing = false;
+  var startX = 0, startY = 0;
+  var freehandPoints = [];
+  var loadedImage = null;
+
+  // Selection state
+  var selectedObject = null;
+  var isDragging = false;
+  var dragOffsetX = 0, dragOffsetY = 0;
+
+  // Resize state
+  var isResizing = false;
+  var resizeStartX = 0, resizeStartY = 0;
+  var resizeOrigObj = null; // snapshot before resize
+
+  // Outline state
+  var outlineEnabled = true;
 
   // --- File loading ---
   dropZone.addEventListener('click', function() { fileInput.click(); });
@@ -500,7 +545,8 @@ footer {
         setupCanvas(img);
         dropZone.style.display = 'none';
         editorEl.classList.add('active');
-        history = [];
+        objects = [];
+        selectedObject = null;
       };
       img.src = e.target.result;
     };
@@ -535,8 +581,20 @@ footer {
       var isText = currentTool === 'text';
       fontSizeGroup.style.display = isText ? 'flex' : 'none';
       fontSizeSep.style.display = isText ? 'block' : 'none';
+      updateCursor();
+      if (currentTool !== 'select') {
+        deselectAll();
+        renderAll();
+      }
     });
   });
+
+  function updateCursor() {
+    canvasWrapper.classList.remove('cursor-select', 'cursor-grab', 'cursor-grabbing');
+    if (currentTool === 'select') {
+      canvasWrapper.classList.add('cursor-select');
+    }
+  }
 
   // Color selection
   document.querySelectorAll('.color-chip').forEach(function(chip) {
@@ -565,20 +623,20 @@ footer {
     });
   });
 
-  // --- Drawing ---
-  function saveState() {
-    history.push(overlayCtx.getImageData(0, 0, overlayCanvas.width, overlayCanvas.height));
-  }
-
-  function redrawOverlay() {
-    if (history.length > 0) {
-      overlayCtx.putImageData(history[history.length - 1], 0, 0);
+  // --- Outline toggle ---
+  var outlineToggle = document.getElementById('outlineToggle');
+  outlineToggle.addEventListener('click', function() {
+    outlineEnabled = !outlineEnabled;
+    if (outlineEnabled) {
+      outlineToggle.textContent = '縁あり';
+      outlineToggle.classList.add('active');
     } else {
-      overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+      outlineToggle.textContent = '縁なし';
+      outlineToggle.classList.remove('active');
     }
-  }
+  });
 
-  // Scale line width relative to canvas size
+  // --- Scaled dimensions ---
   function scaledWidth() {
     var displayW = overlayCanvas.getBoundingClientRect().width;
     var ratio = overlayCanvas.width / displayW;
@@ -591,77 +649,301 @@ footer {
     return currentFontSize * ratio;
   }
 
-  overlayCanvas.addEventListener('mousedown', onPointerDown);
-  overlayCanvas.addEventListener('mousemove', onPointerMove);
-  overlayCanvas.addEventListener('mouseup', onPointerUp);
-  overlayCanvas.addEventListener('mouseleave', onPointerUp);
+  // =============================================
+  // Object-based drawing system
+  // =============================================
 
-  // Touch support
-  overlayCanvas.addEventListener('touchstart', function(e) {
-    e.preventDefault();
-    var touch = e.touches[0];
-    onPointerDown({ clientX: touch.clientX, clientY: touch.clientY });
-  }, { passive: false });
-  overlayCanvas.addEventListener('touchmove', function(e) {
-    e.preventDefault();
-    var touch = e.touches[0];
-    onPointerMove({ clientX: touch.clientX, clientY: touch.clientY });
-  }, { passive: false });
-  overlayCanvas.addEventListener('touchend', function(e) {
-    e.preventDefault();
-    onPointerUp({});
-  }, { passive: false });
-
-  function onPointerDown(e) {
-    if (currentTool === 'text') {
-      showTextInput(e);
-      return;
+  function deselectAll() {
+    if (selectedObject) {
+      selectedObject.selected = false;
+      selectedObject = null;
     }
-    isDrawing = true;
-    var coords = getCanvasCoords(e);
-    startX = coords.x;
-    startY = coords.y;
-    if (currentTool === 'freehand') {
-      freehandPoints = [{ x: startX, y: startY }];
-    }
-    saveState();
   }
 
-  function onPointerMove(e) {
-    if (!isDrawing) return;
-    var coords = getCanvasCoords(e);
-    redrawOverlay();
+  function selectObject(obj) {
+    deselectAll();
+    obj.selected = true;
+    selectedObject = obj;
+  }
 
-    var sw = scaledWidth();
-    overlayCtx.strokeStyle = currentColor;
-    overlayCtx.lineWidth = sw;
+  // --- Bounding box calculation ---
+  function getBoundingBox(obj) {
+    var pad = (obj.lineWidth || 4) + 6;
+    switch (obj.type) {
+      case 'arrow':
+        return {
+          x: Math.min(obj.x1, obj.x2) - pad,
+          y: Math.min(obj.y1, obj.y2) - pad,
+          w: Math.abs(obj.x2 - obj.x1) + pad * 2,
+          h: Math.abs(obj.y2 - obj.y1) + pad * 2
+        };
+      case 'rect':
+        return {
+          x: Math.min(obj.x1, obj.x2) - pad,
+          y: Math.min(obj.y1, obj.y2) - pad,
+          w: Math.abs(obj.x2 - obj.x1) + pad * 2,
+          h: Math.abs(obj.y2 - obj.y1) + pad * 2
+        };
+      case 'ellipse':
+        return {
+          x: Math.min(obj.x1, obj.x2) - pad,
+          y: Math.min(obj.y1, obj.y2) - pad,
+          w: Math.abs(obj.x2 - obj.x1) + pad * 2,
+          h: Math.abs(obj.y2 - obj.y1) + pad * 2
+        };
+      case 'freehand': {
+        var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (var i = 0; i < obj.points.length; i++) {
+          if (obj.points[i].x < minX) minX = obj.points[i].x;
+          if (obj.points[i].y < minY) minY = obj.points[i].y;
+          if (obj.points[i].x > maxX) maxX = obj.points[i].x;
+          if (obj.points[i].y > maxY) maxY = obj.points[i].y;
+        }
+        return {
+          x: minX - pad,
+          y: minY - pad,
+          w: (maxX - minX) + pad * 2,
+          h: (maxY - minY) + pad * 2
+        };
+      }
+      case 'text': {
+        // Measure text width using canvas
+        var fs = obj.fontSize;
+        overlayCtx.font = '700 ' + fs + 'px Inter, "Noto Sans JP", sans-serif';
+        var tw = overlayCtx.measureText(obj.text).width;
+        return {
+          x: obj.x1 - 4,
+          y: obj.y1 - 4,
+          w: tw + 8,
+          h: fs * 1.3 + 8
+        };
+      }
+      default:
+        return { x: 0, y: 0, w: 0, h: 0 };
+    }
+  }
+
+  // --- Hit testing ---
+  function hitTest(obj, px, py) {
+    switch (obj.type) {
+      case 'arrow':
+        return distToSegment(px, py, obj.x1, obj.y1, obj.x2, obj.y2) < (obj.lineWidth + 10);
+      case 'rect':
+      case 'ellipse':
+      case 'freehand':
+      case 'text': {
+        var bb = getBoundingBox(obj);
+        return px >= bb.x && px <= bb.x + bb.w && py >= bb.y && py <= bb.y + bb.h;
+      }
+      default:
+        return false;
+    }
+  }
+
+  // Distance from point to line segment
+  function distToSegment(px, py, x1, y1, x2, y2) {
+    var dx = x2 - x1;
+    var dy = y2 - y1;
+    var lenSq = dx * dx + dy * dy;
+    if (lenSq === 0) return Math.sqrt((px - x1) * (px - x1) + (py - y1) * (py - y1));
+    var t = ((px - x1) * dx + (py - y1) * dy) / lenSq;
+    t = Math.max(0, Math.min(1, t));
+    var nearX = x1 + t * dx;
+    var nearY = y1 + t * dy;
+    return Math.sqrt((px - nearX) * (px - nearX) + (py - nearY) * (py - nearY));
+  }
+
+  // Find topmost object at point (iterate in reverse for z-order)
+  function findObjectAt(px, py) {
+    for (var i = objects.length - 1; i >= 0; i--) {
+      if (hitTest(objects[i], px, py)) return objects[i];
+    }
+    return null;
+  }
+
+  // --- Resize handle hit test ---
+  function hitResizeHandle(obj, px, py) {
+    if (!obj || !obj.selected) return false;
+    var bb = getBoundingBox(obj);
+    var hx = bb.x + bb.w;
+    var hy = bb.y + bb.h;
+    var handleSize = 12;
+    return px >= hx - handleSize && px <= hx + handleSize && py >= hy - handleSize && py <= hy + handleSize;
+  }
+
+  // --- Check if mouse is over resize handle (for cursor) ---
+  function isOverResizeHandle(px, py) {
+    if (!selectedObject || !selectedObject.selected) return false;
+    return hitResizeHandle(selectedObject, px, py);
+  }
+
+  // --- Deep clone object for undo snapshot ---
+  function cloneObject(obj) {
+    var c = {};
+    for (var k in obj) {
+      if (k === 'points' && Array.isArray(obj[k])) {
+        c[k] = [];
+        for (var i = 0; i < obj[k].length; i++) {
+          c[k].push({ x: obj[k][i].x, y: obj[k][i].y });
+        }
+      } else {
+        c[k] = obj[k];
+      }
+    }
+    return c;
+  }
+
+  // --- Resize object ---
+  function resizeObject(obj, dx, dy, shiftKey) {
+    switch (obj.type) {
+      case 'arrow':
+      case 'rect':
+      case 'ellipse':
+        if (shiftKey) {
+          // Maintain aspect ratio
+          var ow = obj.x2 - obj.x1;
+          var oh = obj.y2 - obj.y1;
+          var ratio = (ow === 0) ? 1 : Math.abs(oh / ow);
+          if (Math.abs(dx) * ratio > Math.abs(dy)) {
+            dy = dx * ratio * (oh >= 0 ? 1 : -1) * (dx >= 0 ? 1 : 1);
+            if ((ow >= 0 && dx < 0) || (ow < 0 && dx > 0)) dy = -dy;
+            if (oh >= 0) dy = Math.abs(dx) * ratio;
+            else dy = -Math.abs(dx) * ratio;
+          } else {
+            dx = Math.abs(dy) / (ratio || 1);
+            if (ow < 0) dx = -dx;
+          }
+        }
+        obj.x2 += dx;
+        obj.y2 += dy;
+        break;
+      case 'text': {
+        // Scale font size based on drag delta
+        var bb = getBoundingBox(obj);
+        var origH = bb.h;
+        var newH = origH + dy;
+        if (newH < 8) newH = 8;
+        var scale = newH / origH;
+        obj.fontSize = Math.max(8, obj.fontSize * scale);
+        break;
+      }
+      case 'freehand': {
+        // Scale all points relative to bounding box
+        var bb2 = getBoundingBox(obj);
+        var pad = (obj.lineWidth || 4) + 6;
+        var minX = bb2.x + pad;
+        var minY = bb2.y + pad;
+        var bw = bb2.w - pad * 2;
+        var bh = bb2.h - pad * 2;
+        if (bw < 1) bw = 1;
+        if (bh < 1) bh = 1;
+        var newW = bw + dx;
+        var newH2 = bh + dy;
+        if (shiftKey) {
+          var fRatio = bw / bh;
+          newH2 = newW / fRatio;
+        }
+        if (newW < 4) newW = 4;
+        if (newH2 < 4) newH2 = 4;
+        var scaleX = newW / bw;
+        var scaleY = newH2 / bh;
+        for (var i = 0; i < obj.points.length; i++) {
+          obj.points[i].x = minX + (obj.points[i].x - minX) * scaleX;
+          obj.points[i].y = minY + (obj.points[i].y - minY) * scaleY;
+        }
+        break;
+      }
+    }
+  }
+
+  // --- Move object ---
+  function moveObject(obj, dx, dy) {
+    switch (obj.type) {
+      case 'arrow':
+      case 'rect':
+      case 'ellipse':
+        obj.x1 += dx;
+        obj.y1 += dy;
+        obj.x2 += dx;
+        obj.y2 += dy;
+        break;
+      case 'freehand':
+        for (var i = 0; i < obj.points.length; i++) {
+          obj.points[i].x += dx;
+          obj.points[i].y += dy;
+        }
+        break;
+      case 'text':
+        obj.x1 += dx;
+        obj.y1 += dy;
+        break;
+    }
+  }
+
+  // =============================================
+  // Rendering
+  // =============================================
+
+  function renderAll() {
+    overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+    for (var i = 0; i < objects.length; i++) {
+      renderObject(objects[i]);
+    }
+    // Draw selection indicator on top
+    if (selectedObject && selectedObject.selected) {
+      drawSelectionBox(selectedObject);
+    }
+  }
+
+  function renderObject(obj) {
+    overlayCtx.save();
+    overlayCtx.strokeStyle = obj.color;
+    overlayCtx.lineWidth = obj.lineWidth;
     overlayCtx.lineCap = 'round';
     overlayCtx.lineJoin = 'round';
 
-    if (currentTool === 'arrow') {
-      drawArrow(overlayCtx, startX, startY, coords.x, coords.y, sw);
-    } else if (currentTool === 'rect') {
-      overlayCtx.beginPath();
-      overlayCtx.rect(startX, startY, coords.x - startX, coords.y - startY);
-      overlayCtx.stroke();
-    } else if (currentTool === 'ellipse') {
-      drawEllipse(overlayCtx, startX, startY, coords.x, coords.y);
-    } else if (currentTool === 'freehand') {
-      freehandPoints.push({ x: coords.x, y: coords.y });
-      drawFreehand(overlayCtx);
+    switch (obj.type) {
+      case 'arrow':
+        drawArrow(overlayCtx, obj.x1, obj.y1, obj.x2, obj.y2, obj.lineWidth);
+        break;
+      case 'rect':
+        overlayCtx.beginPath();
+        overlayCtx.rect(obj.x1, obj.y1, obj.x2 - obj.x1, obj.y2 - obj.y1);
+        overlayCtx.stroke();
+        break;
+      case 'ellipse':
+        drawEllipse(overlayCtx, obj.x1, obj.y1, obj.x2, obj.y2);
+        break;
+      case 'freehand':
+        drawFreehandFromPoints(overlayCtx, obj.points);
+        break;
+      case 'text':
+        drawTextObject(overlayCtx, obj);
+        break;
     }
+    overlayCtx.restore();
   }
 
-  function onPointerUp(e) {
-    if (!isDrawing) return;
-    isDrawing = false;
+  function drawSelectionBox(obj) {
+    var bb = getBoundingBox(obj);
+    overlayCtx.save();
+    overlayCtx.strokeStyle = '#3498db';
+    overlayCtx.lineWidth = 2;
+    overlayCtx.setLineDash([6, 4]);
+    overlayCtx.strokeRect(bb.x, bb.y, bb.w, bb.h);
 
-    // The preview was drawn on top of the last saved state.
-    // Now we need to capture the final result as the new state.
-    // Remove the state we saved at mousedown (it was the "before" state)
-    // and push the current canvas as the new "after" state.
-    history.pop();
-    saveState();
+    // Resize handle at bottom-right corner
+    var handleSize = 8;
+    var hx = bb.x + bb.w - handleSize / 2;
+    var hy = bb.y + bb.h - handleSize / 2;
+    overlayCtx.setLineDash([]);
+    overlayCtx.fillStyle = '#fff';
+    overlayCtx.strokeStyle = '#3498db';
+    overlayCtx.lineWidth = 2;
+    overlayCtx.fillRect(hx, hy, handleSize, handleSize);
+    overlayCtx.strokeRect(hx, hy, handleSize, handleSize);
+
+    overlayCtx.restore();
   }
 
   // --- Draw helpers ---
@@ -688,18 +970,225 @@ footer {
     var rx = Math.abs(x2 - x1) / 2;
     var ry = Math.abs(y2 - y1) / 2;
     ctx.beginPath();
-    ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx, cy, Math.max(rx, 0.1), Math.max(ry, 0.1), 0, 0, Math.PI * 2);
     ctx.stroke();
   }
 
-  function drawFreehand(ctx) {
-    if (freehandPoints.length < 2) return;
+  function drawFreehandFromPoints(ctx, points) {
+    if (points.length < 2) return;
     ctx.beginPath();
-    ctx.moveTo(freehandPoints[0].x, freehandPoints[0].y);
-    for (var i = 1; i < freehandPoints.length; i++) {
-      ctx.lineTo(freehandPoints[i].x, freehandPoints[i].y);
+    ctx.moveTo(points[0].x, points[0].y);
+    for (var i = 1; i < points.length; i++) {
+      ctx.lineTo(points[i].x, points[i].y);
     }
     ctx.stroke();
+  }
+
+  function drawTextObject(ctx, obj) {
+    var fs = obj.fontSize;
+    ctx.font = '700 ' + fs + 'px Inter, "Noto Sans JP", sans-serif';
+    ctx.fillStyle = obj.color;
+    ctx.textBaseline = 'top';
+
+    // Text shadow/outline for readability (only if outline is enabled)
+    if (obj.outline !== false) {
+      ctx.strokeStyle = (obj.color === '#ffffff' || obj.color === '#f1c40f') ? '#000' : '#fff';
+      ctx.lineWidth = fs * 0.12;
+      ctx.lineJoin = 'round';
+      ctx.strokeText(obj.text, obj.x1, obj.y1);
+    }
+    ctx.fillText(obj.text, obj.x1, obj.y1);
+  }
+
+  // =============================================
+  // Event handlers
+  // =============================================
+
+  overlayCanvas.addEventListener('mousedown', onPointerDown);
+  overlayCanvas.addEventListener('mousemove', onPointerMove);
+  overlayCanvas.addEventListener('mouseup', onPointerUp);
+  overlayCanvas.addEventListener('mouseleave', onPointerUp);
+
+  // Touch support
+  overlayCanvas.addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    var touch = e.touches[0];
+    onPointerDown({ clientX: touch.clientX, clientY: touch.clientY, preventDefault: function(){}, stopPropagation: function(){} });
+  }, { passive: false });
+  overlayCanvas.addEventListener('touchmove', function(e) {
+    e.preventDefault();
+    var touch = e.touches[0];
+    onPointerMove({ clientX: touch.clientX, clientY: touch.clientY, shiftKey: false });
+  }, { passive: false });
+  overlayCanvas.addEventListener('touchend', function(e) {
+    e.preventDefault();
+    onPointerUp({});
+  }, { passive: false });
+
+  function onPointerDown(e) {
+    var coords = getCanvasCoords(e);
+
+    // --- Select mode ---
+    if (currentTool === 'select') {
+      // Check resize handle first
+      if (selectedObject && hitResizeHandle(selectedObject, coords.x, coords.y)) {
+        isResizing = true;
+        resizeStartX = coords.x;
+        resizeStartY = coords.y;
+        resizeOrigObj = cloneObject(selectedObject);
+        canvasWrapper.classList.add('cursor-nwse-resize');
+        return;
+      }
+
+      var hit = findObjectAt(coords.x, coords.y);
+      if (hit) {
+        selectObject(hit);
+        isDragging = true;
+        dragOffsetX = coords.x;
+        dragOffsetY = coords.y;
+        canvasWrapper.classList.remove('cursor-grab');
+        canvasWrapper.classList.add('cursor-grabbing');
+      } else {
+        deselectAll();
+        isDragging = false;
+      }
+      renderAll();
+      return;
+    }
+
+    // --- Text tool ---
+    if (currentTool === 'text') {
+      e.preventDefault && e.preventDefault();
+      e.stopPropagation && e.stopPropagation();
+      setTimeout(function() { showTextInput(e); }, 50);
+      return;
+    }
+
+    // --- Drawing tools ---
+    isDrawing = true;
+    startX = coords.x;
+    startY = coords.y;
+    if (currentTool === 'freehand') {
+      freehandPoints = [{ x: startX, y: startY }];
+    }
+  }
+
+  function onPointerMove(e) {
+    var coords = getCanvasCoords(e);
+
+    // --- Select mode: dragging / resizing ---
+    if (currentTool === 'select') {
+      if (isResizing && selectedObject) {
+        var dx = coords.x - resizeStartX;
+        var dy = coords.y - resizeStartY;
+        resizeObject(selectedObject, dx, dy, e.shiftKey);
+        resizeStartX = coords.x;
+        resizeStartY = coords.y;
+        renderAll();
+      } else if (isDragging && selectedObject) {
+        var dx = coords.x - dragOffsetX;
+        var dy = coords.y - dragOffsetY;
+        moveObject(selectedObject, dx, dy);
+        dragOffsetX = coords.x;
+        dragOffsetY = coords.y;
+        renderAll();
+      } else {
+        // Hover cursor change
+        if (isOverResizeHandle(coords.x, coords.y)) {
+          canvasWrapper.classList.remove('cursor-grab');
+          canvasWrapper.classList.add('cursor-nwse-resize');
+        } else {
+          canvasWrapper.classList.remove('cursor-nwse-resize');
+          var hit = findObjectAt(coords.x, coords.y);
+          if (hit) {
+            canvasWrapper.classList.add('cursor-grab');
+          } else {
+            canvasWrapper.classList.remove('cursor-grab');
+          }
+        }
+      }
+      return;
+    }
+
+    // --- Drawing preview ---
+    if (!isDrawing) return;
+
+    // Re-render all objects then draw preview on top
+    renderAll();
+
+    var sw = scaledWidth();
+    overlayCtx.strokeStyle = currentColor;
+    overlayCtx.lineWidth = sw;
+    overlayCtx.lineCap = 'round';
+    overlayCtx.lineJoin = 'round';
+
+    if (currentTool === 'arrow') {
+      drawArrow(overlayCtx, startX, startY, coords.x, coords.y, sw);
+    } else if (currentTool === 'rect') {
+      overlayCtx.beginPath();
+      overlayCtx.rect(startX, startY, coords.x - startX, coords.y - startY);
+      overlayCtx.stroke();
+    } else if (currentTool === 'ellipse') {
+      drawEllipse(overlayCtx, startX, startY, coords.x, coords.y);
+    } else if (currentTool === 'freehand') {
+      freehandPoints.push({ x: coords.x, y: coords.y });
+      drawFreehandFromPoints(overlayCtx, freehandPoints);
+    }
+  }
+
+  function onPointerUp(e) {
+    // --- Select mode ---
+    if (currentTool === 'select') {
+      if (isResizing) {
+        isResizing = false;
+        resizeOrigObj = null;
+        canvasWrapper.classList.remove('cursor-nwse-resize');
+        renderAll();
+      }
+      if (isDragging) {
+        isDragging = false;
+        canvasWrapper.classList.remove('cursor-grabbing');
+        if (selectedObject) {
+          canvasWrapper.classList.add('cursor-grab');
+        }
+      }
+      return;
+    }
+
+    if (!isDrawing) return;
+    isDrawing = false;
+
+    var coords;
+    if (e.clientX !== undefined && e.clientY !== undefined) {
+      coords = getCanvasCoords(e);
+    } else {
+      // mouseleave or touchend without coordinates - use last known position
+      coords = { x: startX, y: startY };
+    }
+
+    var sw = scaledWidth();
+
+    // Create and store the object
+    var obj = null;
+    if (currentTool === 'arrow') {
+      obj = { type: 'arrow', x1: startX, y1: startY, x2: coords.x, y2: coords.y, color: currentColor, lineWidth: sw, outline: outlineEnabled, selected: false };
+    } else if (currentTool === 'rect') {
+      obj = { type: 'rect', x1: startX, y1: startY, x2: coords.x, y2: coords.y, color: currentColor, lineWidth: sw, outline: outlineEnabled, selected: false };
+    } else if (currentTool === 'ellipse') {
+      obj = { type: 'ellipse', x1: startX, y1: startY, x2: coords.x, y2: coords.y, color: currentColor, lineWidth: sw, outline: outlineEnabled, selected: false };
+    } else if (currentTool === 'freehand') {
+      // Deep copy points
+      var pts = [];
+      for (var i = 0; i < freehandPoints.length; i++) {
+        pts.push({ x: freehandPoints[i].x, y: freehandPoints[i].y });
+      }
+      obj = { type: 'freehand', points: pts, color: currentColor, lineWidth: sw, outline: outlineEnabled, selected: false };
+    }
+
+    if (obj) {
+      objects.push(obj);
+      renderAll();
+    }
   }
 
   // --- Text tool ---
@@ -715,6 +1204,7 @@ footer {
     textField.style.color = currentColor;
     textField.style.fontSize = currentFontSize + 'px';
     textField.value = '';
+    textPlaced = false;
     textField.focus();
 
     textField.onkeydown = function(ev) {
@@ -727,64 +1217,88 @@ footer {
       }
     };
     textField.onblur = function() {
-      if (textField.value.trim()) {
-        placeText(displayX, displayY);
-      } else {
-        textInputEl.style.display = 'none';
-      }
+      setTimeout(function() {
+        if (textField.value.trim()) {
+          placeText(displayX, displayY);
+        } else {
+          textInputEl.style.display = 'none';
+        }
+      }, 100);
     };
   }
 
+  var textPlaced = false;
   function placeText(displayX, displayY) {
+    if (textPlaced) return;
     var text = textField.value.trim();
     textInputEl.style.display = 'none';
+    textField.onblur = null;
+    textField.onkeydown = null;
     if (!text) return;
+    textPlaced = true;
 
     var ratio = overlayCanvas.width / overlayCanvas.getBoundingClientRect().width;
     var cx = displayX * ratio;
     var cy = displayY * ratio;
     var fs = scaledFontSize();
 
-    saveState();
-    overlayCtx.font = '700 ' + fs + 'px Inter, "Noto Sans JP", sans-serif';
-    overlayCtx.fillStyle = currentColor;
-    overlayCtx.textBaseline = 'top';
-
-    // Text shadow/outline for readability
-    overlayCtx.strokeStyle = currentColor === '#ffffff' || currentColor === '#f1c40f' ? '#000' : '#fff';
-    overlayCtx.lineWidth = fs * 0.12;
-    overlayCtx.lineJoin = 'round';
-    overlayCtx.strokeText(text, cx, cy);
-    overlayCtx.fillText(text, cx, cy);
-
-    // Replace last saved state with current
-    history.pop();
-    saveState();
+    var obj = {
+      type: 'text',
+      x1: cx,
+      y1: cy,
+      text: text,
+      color: currentColor,
+      fontSize: fs,
+      lineWidth: 0,
+      outline: outlineEnabled,
+      selected: false
+    };
+    objects.push(obj);
+    renderAll();
   }
 
   // --- Undo ---
   document.getElementById('undoBtn').addEventListener('click', undo);
   function undo() {
-    if (history.length === 0) return;
-    history.pop();
-    redrawOverlay();
+    if (objects.length === 0) return;
+    objects.pop();
+    deselectAll();
+    renderAll();
   }
 
   document.addEventListener('keydown', function(e) {
+    // Ignore when text input is focused
+    if (document.activeElement === textField) return;
+
     if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
       e.preventDefault();
       undo();
+    }
+    // Delete selected object
+    if ((e.key === 'Delete' || e.key === 'Backspace') && selectedObject) {
+      e.preventDefault();
+      var idx = objects.indexOf(selectedObject);
+      if (idx !== -1) {
+        objects.splice(idx, 1);
+      }
+      selectedObject = null;
+      renderAll();
     }
   });
 
   // --- Clear ---
   document.getElementById('clearBtn').addEventListener('click', function() {
-    history = [];
+    objects = [];
+    selectedObject = null;
     overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
   });
 
   // --- Save ---
   document.getElementById('saveBtn').addEventListener('click', function() {
+    // Deselect before saving so selection box is not in output
+    deselectAll();
+    renderAll();
+
     var mergeCanvas = document.createElement('canvas');
     mergeCanvas.width = baseCanvas.width;
     mergeCanvas.height = baseCanvas.height;
@@ -802,12 +1316,16 @@ footer {
   document.getElementById('resetBtn').addEventListener('click', function() {
     editorEl.classList.remove('active');
     dropZone.style.display = '';
-    history = [];
+    objects = [];
+    selectedObject = null;
     loadedImage = null;
     fileInput.value = '';
     overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
     baseCtx.clearRect(0, 0, baseCanvas.width, baseCanvas.height);
   });
+
+  // Initialize cursor
+  updateCursor();
 
 })();
 </script>
