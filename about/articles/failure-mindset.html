@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>失敗の思考 — 情報商材に100万使って学んだこと | ダイスケマンBASE</title>
+  <meta name="description" content="40代で脱サラしたおじさんが、情報商材に100万円使って気づいた本質。ツールを手に入れても成長しなければ意味がない。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+JP:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --font: 'Inter', 'Noto Sans JP', -apple-system, sans-serif;
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+      --accent: #E17850;
+      --max-w: 780px;
+      --pad: 40px;
+    }
+
+    [data-theme="dark"] {
+      --bg: #060606;
+      --bg-card: #0f0f0f;
+      --border: #181818;
+      --text: #eee;
+      --text-sub: #9a9a9a;
+      --text-muted: #6a6a6a;
+    }
+
+    [data-theme="light"] {
+      --bg: #f5f3f0;
+      --bg-card: #fff;
+      --border: #e0dbd4;
+      --text: #1a1a1a;
+      --text-sub: #666;
+      --text-muted: #aaa;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 2.2;
+      -webkit-font-smoothing: antialiased;
+      transition: background 0.5s var(--ease), color 0.5s var(--ease);
+    }
+
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(6,6,6,0.92);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      transition: background 0.5s var(--ease), border-color 0.5s var(--ease);
+    }
+    [data-theme="light"] nav { background: rgba(245,243,240,0.94); }
+
+    .nav-inner {
+      max-width: var(--max-w); margin: 0 auto;
+      padding: 0 var(--pad); height: 56px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .nav-back {
+      font-size: 0.72rem; font-weight: 500;
+      color: var(--text-sub); letter-spacing: 0.05em;
+      display: flex; align-items: center; gap: 8px;
+      transition: color 0.2s; text-decoration: none;
+    }
+    .nav-back:hover { color: var(--text); }
+    .nav-back svg {
+      width: 14px; height: 14px; stroke: currentColor; fill: none;
+      stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+    }
+
+    .theme-toggle {
+      width: 32px; height: 32px; border-radius: 6px;
+      border: 1px solid var(--border); background: transparent;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all 0.3s; color: var(--text-muted);
+    }
+    .theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+    .theme-toggle svg {
+      width: 14px; height: 14px; stroke: currentColor; fill: none;
+      stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+    }
+    .theme-toggle .icon-sun { display: none; }
+    .theme-toggle .icon-moon { display: block; }
+    [data-theme="light"] .theme-toggle .icon-sun { display: block; }
+    [data-theme="light"] .theme-toggle .icon-moon { display: none; }
+
+    .article {
+      max-width: var(--max-w); margin: 0 auto;
+      padding: 100px var(--pad) 80px;
+    }
+
+    .article-label {
+      font-size: 0.6rem; font-weight: 600;
+      letter-spacing: 0.35em; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 20px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .article-label::before {
+      content: ''; width: 20px; height: 1px; background: var(--accent);
+    }
+
+    .article-title {
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 800; letter-spacing: -0.02em;
+      line-height: 1.4; margin-bottom: 8px;
+    }
+
+    .article-meta {
+      font-size: 0.72rem; color: var(--text-muted);
+      margin-bottom: 48px;
+      padding-bottom: 32px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .article-body h2 {
+      font-size: 1.2rem; font-weight: 800;
+      margin: 48px 0 16px;
+      color: var(--accent);
+    }
+
+    .article-body p {
+      font-size: 0.92rem; color: var(--text-sub);
+      margin-bottom: 20px;
+      transition: color 0.5s var(--ease);
+    }
+
+    .article-body p strong {
+      color: var(--text); font-weight: 600;
+    }
+
+    .article-body .callout {
+      background: var(--bg-card);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 8px 8px 0;
+      padding: 24px 28px;
+      margin: 32px 0;
+      font-size: 0.92rem;
+      color: var(--text-sub);
+      line-height: 2;
+    }
+
+    .article-nav {
+      margin-top: 64px; padding-top: 32px;
+      border-top: 1px solid var(--border);
+    }
+
+    .article-nav a {
+      font-size: 0.78rem; font-weight: 500;
+      color: var(--text-sub); text-decoration: none;
+      display: flex; align-items: center; gap: 8px;
+      transition: color 0.2s;
+    }
+    .article-nav a:hover { color: var(--accent); }
+    .article-nav a svg {
+      width: 14px; height: 14px; stroke: currentColor; fill: none;
+      stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+    }
+
+    .page-footer {
+      max-width: var(--max-w); margin: 0 auto;
+      padding: 32px var(--pad);
+      border-top: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .page-footer span {
+      font-size: 0.6rem; color: var(--text-muted);
+    }
+
+    @media (max-width: 640px) {
+      :root { --pad: 20px; }
+      .page-footer { flex-direction: column; gap: 8px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="nav-inner">
+      <a href="../" class="nav-back">
+        <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        ダイスケマンとは
+      </a>
+      <button class="theme-toggle" id="themeToggle" aria-label="テーマ切替">
+        <svg class="icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      </button>
+    </div>
+  </nav>
+
+  <div class="article">
+    <p class="article-label">Knowledge</p>
+    <h1 class="article-title">失敗の思考</h1>
+    <p class="article-meta">情報商材に100万使って学んだこと — ダイスケマン</p>
+
+    <div class="article-body">
+
+      <h2>最初に買ったのはライティング教材だった</h2>
+      <p>
+        まだガラケーの時代。ダイヤルアップ回線で画像1枚表示するのに3分かかるような時代に、インフォシークっていうサイトで情報商材を買った。5,000円か1万円くらい。「魔法のライティング」みたいな名前だった。
+      </p>
+      <p>
+        ライティングの技術を学べば稼げると思った。でも今ならわかる。<strong>ライティングだけ学んでもダメ。</strong>そのライティングをどうやってお金にするか。どこから仕事をもらうか。納品はどうするか。そこがセットじゃないと宝の持ち腐れ。
+      </p>
+      <p>
+        その後もFXの教材、バイナリーオプション、ブログ術。結構な額を情報商材に払ってきた。多分100万くらい使ってると思う。
+      </p>
+
+      <h2>買う時はいつも夢を見てる</h2>
+      <p>
+        共通して言えることがある。買う時はめちゃくちゃ夢見てる。
+      </p>
+      <div class="callout">
+        「今回こそいける」<br>
+        「今回こそ本物に出会った」<br>
+        「今回こそやれそうな気がする」
+      </div>
+      <p>
+        全部ことごとく結果は同じ。<strong>失敗。全部。</strong>
+      </p>
+
+      <h2>ツールを手に入れたら強くなった気がする</h2>
+      <p>
+        なぜ失敗するか。足りないのは気づき。
+      </p>
+      <p>
+        ツールを買ったり情報を手にすることで、自分が強くなれた気がする。目的を達成できるって勘違いする。
+      </p>
+      <p>
+        中には魔法のツールもあるかもしれない。でも基本的にはツールを手に入れたところで、<strong>自分が成長していなければ、一時的にうまくいっても続かない。</strong>
+      </p>
+
+      <h2>RPGで例えるとこういうこと</h2>
+      <p>
+        レベル12の勇者が、ラスボスを倒す時に手に入れるような「勇者の剣」を持ったところで、ラスボスには勝てない。
+      </p>
+      <p>
+        スライムは余裕で倒せる。同レベルの敵も倒せる。でもちょっとレベルの高いところに行ったら一発でやられる。
+      </p>
+      <p>
+        <strong>攻撃力だけ強くなっても、防御が何もできてない。</strong>ボスは当然倒せない。
+      </p>
+
+      <h2>「あのツールはダメだった」と言い出す</h2>
+      <p>
+        必ずこう言い出す。「あのツールはダメだった」「あいつは詐欺だ」
+      </p>
+      <p>
+        でも中身を見たら大した内容じゃない。大した内容じゃないけど、詐欺でもない。書いてあることは至極真っ当で、それをやったらできるよねっていう内容。
+      </p>
+      <p>
+        問題は、買う時にそれに夢を見すぎること。手に入れたら何でもできるって思っちゃう。でも<strong>自分が成長してないから何の解決にもならない。</strong>
+      </p>
+
+      <h2>AIの時代、もっと気をつけないといけない</h2>
+      <p>
+        AIができることによって、引っかかる人はもっと増えると思う。AIは上手だから。今までレベルの低い人がAIを使うことで、より簡単にそれっぽいことを言えちゃう。
+      </p>
+      <p>
+        見極める能力も必要だけど、本質はそこじゃない。
+      </p>
+
+      <h2>茨の道は一人では続かない</h2>
+      <p>
+        茨の道って続かないんですよ。一人で続けていくのは勇気もいるし、忍耐力も必要だし、自分に甘くしたらできない。すごく大変。
+      </p>
+      <p>
+        だから僕がもしコンサルやるなら、伴走する。言い方悪いかもしれないけど、やる時は厳しいことも言う。その時は嫌かもしれない。
+      </p>
+      <p>
+        でもやる以上、<strong>本気で来てほしい。</strong>本気で来れないなら受けたくない。でも本気で来てくれる以上、成果を出すところまで一緒に走る。
+      </p>
+      <p>
+        茨の道を一緒に歩くわけじゃない。でも導いてあげることはできる。
+      </p>
+
+      <h2>唯一、僕が変わったきっかけ</h2>
+      <p>
+        唯一変わったきっかけは何かっていうと、ものすごいツールを手にしたからじゃない。いや、AIは間違いなく武器だった。でもAIを持ったところで、ちょっと上の人と戦ったら負ける。
+      </p>
+      <p>
+        その武器のレバレッジをさらにかけるには、自分がレベルアップしないといけない。
+      </p>
+      <p>
+        ツール頼りじゃダメ。常に勉強していかないといけないし、自分に厳しいことも強いていかないといけないし、挑戦していかないといけない。
+      </p>
+      <p>
+        1ヶ月前の自分より成長してる。1年前の自分より成長してる。その感覚は確実にある。停滞してない。毎日上がり続けてる。
+      </p>
+
+      <div class="callout">
+        <strong>本質は一つだけ。</strong><br><br>
+        どんなにいいツールを使っても意味がない。<br>
+        本質は、自分がどう成長できるか。<br>
+        本気で変わりたいかどうか。<br>
+        変わるために茨の道を歩めるかどうか。<br><br>
+        ここしかない。
+      </div>
+
+    </div>
+
+    <div class="article-nav">
+      <a href="../">
+        <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        ダイスケマンとはに戻る
+      </a>
+    </div>
+  </div>
+
+  <footer class="page-footer">
+    <span>DAISUKEMAN BASE</span>
+    <span>&copy; 2026 D@ISM</span>
+  </footer>
+
+  <script>
+    const toggle = document.getElementById('themeToggle');
+    const html = document.documentElement;
+    const saved = localStorage.getItem('theme');
+    if (saved) html.setAttribute('data-theme', saved);
+    toggle.addEventListener('click', () => {
+      const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+    });
+  </script>
+
+</body>
+</html>
