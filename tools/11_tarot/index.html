@@ -378,11 +378,19 @@ body.punish .punish-quote{
   .oracle-box{padding:20px 16px;margin:24px 12px;}
 }
 
+@media(max-width:600px){
+  /* 余り2枚を等間隔配置: 5列の列2と列4 */
+  #cardGrid .tarot-card:nth-last-child(2){grid-column:2 !important;}
+  #cardGrid .tarot-card:nth-last-child(1){grid-column:4 !important;}
+}
 @media(max-width:400px){
   /* 小さいスマホ: 4列grid */
   #cardGrid{
     grid-template-columns:repeat(4, 1fr) !important;
   }
+  /* 4列時の余り2枚: 両端(列1と列4)で等間隔感 */
+  #cardGrid .tarot-card:nth-last-child(2){grid-column:1 !important;}
+  #cardGrid .tarot-card:nth-last-child(1){grid-column:4 !important;}
 }
 </style>
 <!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "d24f1023bf20452ab2732d4e254a2cfd"}'></script><!-- End Cloudflare Web Analytics -->
@@ -582,9 +590,9 @@ function toggleSelect(el,idx){
   }
   selCount.textContent=`\u9078\u629e: ${selected.length} / 3`;
   if(selected.length===3){
-    // Check if all 3 selected within 3 seconds
+    // Check if all 3 selected within 1.5 seconds (only triggers on rapid careless tapping)
     var elapsed = selectTimes[2] - selectTimes[0];
-    isCareless = elapsed < 3000;
+    isCareless = elapsed < 1500;
     document.getElementById('divineOverlay').classList.remove('hidden');
     document.querySelectorAll('.tarot-card:not(.selected)').forEach(c=>c.classList.add('disabled'));
   }else{
