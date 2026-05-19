@@ -366,6 +366,20 @@ footer {
   border-top: 1px solid var(--border);
 }
 
+/* Loupe */
+#loupeCanvas {
+  position: fixed;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  pointer-events: none;
+  display: none;
+  z-index: 200;
+  image-rendering: pixelated;
+}
+
 /* Responsive */
 @media (max-width: 480px) {
   header { padding: 24px 0 20px; }
@@ -375,6 +389,7 @@ footer {
   .color-chip-swatch { height: 56px; }
 }
 </style>
+<!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "d24f1023bf20452ab2732d4e254a2cfd"}'></script><!-- End Cloudflare Web Analytics -->
 </head>
 <body>
 <div class="container">
@@ -430,6 +445,7 @@ footer {
   </div>
 </footer>
 
+<canvas id="loupeCanvas" width="120" height="120"></canvas>
 <div class="toast" id="toast">コピーしました</div>
 
 <script>
@@ -550,18 +566,33 @@ footer {
     paletteSection.classList.add('active');
   }
 
-  // --- Eyedropper ---
+  // --- Eyedropper (EyeDropper API) ---
   var eyedropperBtn = document.getElementById('eyedropperBtn');
-  var eyedropperActive = false;
 
-  eyedropperBtn.addEventListener('click', function() {
-    eyedropperActive = !eyedropperActive;
-    eyedropperBtn.classList.toggle('active', eyedropperActive);
-    canvas.style.cursor = eyedropperActive ? 'crosshair' : 'default';
-  });
+  if ('EyeDropper' in window) {
+    eyedropperBtn.addEventListener('click', async function() {
+      try {
+        var dropper = new EyeDropper();
+        var result = await dropper.open();
+        var hex = result.sRGBHex;
+        // Parse hex to RGB
+        var bigint = parseInt(hex.slice(1), 16);
+        var r = (bigint >> 16) & 255;
+        var g = (bigint >> 8) & 255;
+        var b = bigint & 255;
+        pickedSwatch.style.background = hex;
+        pickedHex.textContent = hex;
+        pickedRgb.textContent = 'rgb(' + r + ', ' + g + ', ' + b + ')';
+        pickedColor.classList.add('active');
+      } catch(e) {}
+    });
+  } else {
+    eyedropperBtn.style.display = 'none';
+  }
 
+  // Legacy canvas click for fallback
   canvas.addEventListener('click', function(e) {
-    if (!imageData || !eyedropperActive) return;
+    if (!imageData) return;
     var rect = canvas.getBoundingClientRect();
     var scaleX = canvasWidth / rect.width;
     var scaleY = canvasHeight / rect.height;
@@ -578,6 +609,98 @@ footer {
     pickedHex.textContent = hex;
     pickedRgb.textContent = 'rgb(' + r + ', ' + g + ', ' + b + ')';
     pickedColor.classList.add('active');
+    loupeCanvas.style.display = 'none';
+  });
+
+  // --- Loupe (magnifier) ---
+  var loupeCanvas = document.getElementById('loupeCanvas');
+  var loupeCtx = loupeCanvas.getContext('2d');
+  var loupeSize = 120;
+  var loupeZoom = 9;
+  // Number of source pixels to sample (must be odd for center pixel)
+  var sampleSize = Math.ceil(loupeSize / loupeZoom) | 1;
+  if (sampleSize % 2 === 0) sampleSize++;
+
+  canvas.addEventListener('mousemove', function(e) {
+    if (!imageData || !eyedropperActive) {
+      loupeCanvas.style.display = 'none';
+      return;
+    }
+    loupeCanvas.style.display = 'block';
+
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = canvasWidth / rect.width;
+    var scaleY = canvasHeight / rect.height;
+    var px = Math.floor((e.clientX - rect.left) * scaleX);
+    var py = Math.floor((e.clientY - rect.top) * scaleY);
+    px = Math.max(0, Math.min(px, canvasWidth - 1));
+    py = Math.max(0, Math.min(py, canvasHeight - 1));
+
+    // Position loupe: prefer top-right of cursor, adjust if near edges
+    var offset = 20;
+    var lx = e.clientX + offset;
+    var ly = e.clientY - loupeSize - offset;
+    // Keep within viewport
+    if (lx + loupeSize > window.innerWidth) {
+      lx = e.clientX - loupeSize - offset;
+    }
+    if (ly < 0) {
+      ly = e.clientY + offset;
+    }
+    if (lx < 0) lx = offset;
+    if (ly + loupeSize > window.innerHeight) {
+      ly = window.innerHeight - loupeSize - 4;
+    }
+    loupeCanvas.style.left = lx + 'px';
+    loupeCanvas.style.top = ly + 'px';
+
+    // Draw magnified pixels
+    var half = Math.floor(sampleSize / 2);
+    loupeCtx.clearRect(0, 0, loupeSize, loupeSize);
+    var cellSize = loupeSize / sampleSize;
+
+    for (var dy = -half; dy <= half; dy++) {
+      for (var dx = -half; dx <= half; dx++) {
+        var sx = Math.max(0, Math.min(px + dx, canvasWidth - 1));
+        var sy = Math.max(0, Math.min(py + dy, canvasHeight - 1));
+        var idx = (sy * canvasWidth + sx) * 4;
+        var r = imageData.data[idx];
+        var g = imageData.data[idx + 1];
+        var b = imageData.data[idx + 2];
+        loupeCtx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
+        loupeCtx.fillRect(
+          (dx + half) * cellSize,
+          (dy + half) * cellSize,
+          Math.ceil(cellSize),
+          Math.ceil(cellSize)
+        );
+      }
+    }
+
+    // Draw crosshair at center
+    var center = half * cellSize;
+    loupeCtx.strokeStyle = 'rgba(255,255,255,0.8)';
+    loupeCtx.lineWidth = 1.5;
+    loupeCtx.strokeRect(center, center, Math.ceil(cellSize), Math.ceil(cellSize));
+
+    // Thin crosshair lines
+    loupeCtx.beginPath();
+    var mid = center + cellSize / 2;
+    loupeCtx.moveTo(mid, 0);
+    loupeCtx.lineTo(mid, center - 1);
+    loupeCtx.moveTo(mid, center + cellSize + 1);
+    loupeCtx.lineTo(mid, loupeSize);
+    loupeCtx.moveTo(0, mid);
+    loupeCtx.lineTo(center - 1, mid);
+    loupeCtx.moveTo(center + cellSize + 1, mid);
+    loupeCtx.lineTo(loupeSize, mid);
+    loupeCtx.strokeStyle = 'rgba(255,255,255,0.5)';
+    loupeCtx.lineWidth = 0.8;
+    loupeCtx.stroke();
+  });
+
+  canvas.addEventListener('mouseleave', function() {
+    loupeCanvas.style.display = 'none';
   });
 
   pickedHex.addEventListener('click', function() { copyText(pickedHex.textContent); });
@@ -593,6 +716,9 @@ footer {
     paletteGrid.innerHTML = '';
     imageData = null;
     fileInput.value = '';
+    eyedropperActive = false;
+    eyedropperBtn.classList.remove('active');
+    document.getElementById('loupeCanvas').style.display = 'none';
   });
 
   // --- Palette Rendering ---

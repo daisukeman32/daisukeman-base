@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>画像アノテーション — 矢印・枠・文字入れツール</title>
-<meta name="description" content="画像に矢印・四角枠・丸枠・テキストを重ねて書き出せる簡易注釈ツール。画像はブラウザ内で処理され、サーバーへのアップロードは行いません。">
+<title>Ｏ絵カき — 矢印・枠・文字入れツール</title>
+<meta name="description" content="Ｏ絵カき — 画像に矢印・四角枠・丸枠・テキストを重ねて書き出せる簡易注釈ツール。画像はブラウザ内で処理され、サーバーへのアップロードは行いません。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
@@ -121,38 +121,46 @@ header p {
 .drop-zone .hint { font-size: 0.78rem; color: var(--text-sub); opacity: 0.7; margin-top: 8px; }
 
 /* Editor area */
-.editor { display: none; margin-top: 24px; }
-.editor.active { display: block; }
+.editor { display: block; margin-top: 24px; }
+.editor .canvas-wrapper { display: none; }
+.editor .actions { display: none; }
+.editor.active .canvas-wrapper { display: block; }
+.editor.active .actions { display: flex; }
 
 /* Toolbar */
 .toolbar {
+  position: relative;
   background: var(--toolbar-bg);
   border: 1px solid var(--toolbar-border);
   border-radius: 10px;
   padding: 8px 12px;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   margin-bottom: 12px;
 }
 
 .toolbar-group {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
+  flex-shrink: 0;
 }
 
 .toolbar-sep {
   width: 1px;
-  height: 28px;
+  height: 24px;
+  flex-shrink: 0;
   background: var(--toolbar-border);
-  margin: 0 6px;
+  margin: 0 4px;
 }
 
 .tool-btn {
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
   border: 1px solid transparent;
   border-radius: 6px;
   background: none;
@@ -166,12 +174,13 @@ header p {
 }
 .tool-btn:hover { background: var(--tool-hover); color: var(--text-primary); }
 .tool-btn.active { background: var(--tool-active); color: var(--text-primary); border-color: var(--toolbar-border); }
-.tool-btn svg { width: 18px; height: 18px; pointer-events: none; }
+.tool-btn svg { width: 16px; height: 16px; pointer-events: none; }
 
 /* Color chips */
 .color-chip {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
   border-radius: 50%;
   border: 2px solid transparent;
   cursor: pointer;
@@ -189,51 +198,86 @@ header p {
   cursor: pointer;
   font-family: inherit;
   font-size: 0.7rem;
-  padding: 4px 8px;
+  padding: 3px 6px;
+  flex-shrink: 0;
   transition: all 0.15s;
 }
 .size-btn:hover { color: var(--text-primary); }
 .size-btn.active { background: var(--tool-active); color: var(--text-primary); border-color: var(--toolbar-border); }
 
-/* Outline toggle */
-.outline-toggle {
+/* Icon toggle buttons (outline, fill) */
+.icon-toggle {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
   background: none;
-  border: 1px solid var(--toolbar-border);
-  border-radius: 4px;
   color: var(--text-sub);
   cursor: pointer;
-  font-family: inherit;
-  font-size: 0.7rem;
-  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.15s;
-  white-space: nowrap;
+  padding: 0;
 }
-.outline-toggle:hover { color: var(--text-primary); }
-.outline-toggle.active { background: var(--tool-active); color: var(--text-primary); border-color: var(--toolbar-border); }
+.icon-toggle:hover { background: var(--tool-hover); color: var(--text-primary); }
+.icon-toggle.active { background: var(--tool-active); color: var(--text-primary); border-color: var(--toolbar-border); }
+.icon-toggle svg { width: 16px; height: 16px; pointer-events: none; }
 
 /* Canvas wrapper */
 .canvas-wrapper {
   position: relative;
-  display: inline-block;
+  display: block;
   border-radius: 8px;
   overflow: hidden;
-  max-width: 100%;
   cursor: crosshair;
   line-height: 0;
+  margin: 0 auto;
 }
 .canvas-wrapper.cursor-select { cursor: default; }
 .canvas-wrapper.cursor-grab { cursor: grab; }
 .canvas-wrapper.cursor-grabbing { cursor: grabbing; }
 .canvas-wrapper.cursor-nwse-resize { cursor: nwse-resize; }
+.canvas-wrapper.cursor-eyedropper { cursor: none; }
 .canvas-wrapper canvas {
   display: block;
-  max-width: 100%;
-  height: auto;
+  width: 100%;
+  height: 100%;
+}
+
+/* Loupe for eyedropper */
+#annotateLoupe {
+  position: fixed;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  pointer-events: none;
+  display: none;
+  z-index: 200;
+  image-rendering: pixelated;
+}
+#loupeHexLabel {
+  position: fixed;
+  pointer-events: none;
+  display: none;
+  z-index: 201;
+  background: #000;
+  color: #fff;
+  font-size: 10px;
+  font-family: 'Inter', monospace;
+  padding: 2px 6px;
+  border-radius: 3px;
+  text-align: center;
+  white-space: nowrap;
 }
 #overlayCanvas {
   position: absolute;
   top: 0;
   left: 0;
+  pointer-events: auto;
 }
 
 /* Text input overlay */
@@ -281,6 +325,22 @@ header p {
 }
 .btn-secondary:hover { color: var(--text-primary); border-color: var(--text-sub); }
 
+/* Output size selector */
+.output-size-select {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.output-size-select:hover { border-color: var(--text-sub); }
+.output-size-select:focus { border-color: var(--text-sub); }
+
 /* Footer */
 footer {
   margin-top: auto;
@@ -291,15 +351,60 @@ footer {
   opacity: 0.7;
 }
 
+/* Mosaic popup */
+.mosaic-popup {
+  display: none;
+  position: absolute;
+  z-index: 100;
+  background: var(--toolbar-bg);
+  border: 1px solid var(--toolbar-border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  min-width: 180px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+.mosaic-popup.open { display: block; }
+.mosaic-popup-section { margin-bottom: 10px; }
+.mosaic-popup-section:last-child { margin-bottom: 0; }
+.mosaic-popup-label {
+  font-size: 0.7rem;
+  color: var(--text-sub);
+  margin-bottom: 6px;
+}
+.mosaic-popup-row {
+  display: flex;
+  gap: 4px;
+}
+.mosaic-popup-btn {
+  background: none;
+  border: 1px solid var(--toolbar-border);
+  border-radius: 4px;
+  color: var(--text-sub);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.7rem;
+  padding: 4px 10px;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.mosaic-popup-btn:hover { color: var(--text-primary); }
+.mosaic-popup-btn.active {
+  background: var(--tool-active);
+  color: var(--text-primary);
+  border-color: var(--toolbar-border);
+}
+
 /* Responsive */
 @media (max-width: 600px) {
   header h1 { font-size: 1.4rem; }
-  .toolbar { gap: 4px; padding: 6px 8px; }
-  .tool-btn { width: 32px; height: 32px; }
-  .toolbar-sep { margin: 0 3px; }
+  .toolbar { gap: 3px; padding: 4px 6px; }
+  .tool-btn { width: 28px; height: 28px; }
+  .icon-toggle { width: 26px; height: 26px; }
+  .toolbar-sep { margin: 0 2px; }
   .color-chip { width: 18px; height: 18px; }
 }
 </style>
+<!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "d24f1023bf20452ab2732d4e254a2cfd"}'></script><!-- End Cloudflare Web Analytics -->
 </head>
 <body>
 <div class="container">
@@ -309,16 +414,9 @@ footer {
   </nav>
 
   <header>
-    <h1>画像アノテーション</h1>
+    <h1><img src="logo.png" alt="Ｏ絵カき" style="height:160px;vertical-align:middle;filter:drop-shadow(1px 0 0 #fff) drop-shadow(-1px 0 0 #fff) drop-shadow(0 1px 0 #fff) drop-shadow(0 -1px 0 #fff) drop-shadow(1px 1px 0 #fff) drop-shadow(-1px -1px 0 #fff) drop-shadow(1px -1px 0 #fff) drop-shadow(-1px 1px 0 #fff);"></h1>
     <p>矢印・枠・文字を重ねてPNG書き出し</p>
   </header>
-
-  <!-- Drop zone -->
-  <div class="drop-zone" id="dropZone">
-    <p>画像をドラッグ&ドロップ<br>またはクリックして選択</p>
-    <p class="hint">Ctrl+V でクリップボードからも貼り付けできます</p>
-    <input type="file" id="fileInput" accept="image/*" hidden>
-  </div>
 
   <!-- Editor -->
   <div class="editor" id="editor">
@@ -359,6 +457,43 @@ footer {
             <line x1="8" y1="20" x2="16" y2="20"/>
           </svg>
         </button>
+        <button class="tool-btn" data-tool="mosaic" id="mosaicBtn" title="モザイク">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="10"/>
+            <rect x="5" y="5" width="4" height="4" fill="currentColor" opacity="0.4"/>
+            <rect x="10" y="5" width="4" height="4" fill="currentColor" opacity="0.7"/>
+            <rect x="15" y="5" width="4" height="4" fill="currentColor" opacity="0.3"/>
+            <rect x="5" y="10" width="4" height="4" fill="currentColor" opacity="0.6"/>
+            <rect x="10" y="10" width="4" height="4" fill="currentColor" opacity="0.2"/>
+            <rect x="15" y="10" width="4" height="4" fill="currentColor" opacity="0.8"/>
+            <rect x="5" y="15" width="4" height="4" fill="currentColor" opacity="0.5"/>
+            <rect x="10" y="15" width="4" height="4" fill="currentColor" opacity="0.4"/>
+            <rect x="15" y="15" width="4" height="4" fill="currentColor" opacity="0.6"/>
+          </svg>
+        </button>
+        <!-- Mosaic popup -->
+        <div class="mosaic-popup" id="mosaicPopup">
+          <div class="mosaic-popup-section">
+            <div class="mosaic-popup-label">粗さ</div>
+            <div class="mosaic-popup-row">
+              <button class="mosaic-popup-btn" data-blocksize="8">細</button>
+              <button class="mosaic-popup-btn active" data-blocksize="16">中</button>
+              <button class="mosaic-popup-btn" data-blocksize="32">粗</button>
+            </div>
+          </div>
+          <div class="mosaic-popup-section">
+            <div class="mosaic-popup-label">形状</div>
+            <div class="mosaic-popup-row">
+              <button class="mosaic-popup-btn active" data-shape="pen">&#x270F;ペン</button>
+              <button class="mosaic-popup-btn" data-shape="rect">&#x25A1;四角</button>
+            </div>
+          </div>
+        </div>
+        <button class="tool-btn" data-tool="eyedropper" title="スポイト">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.17 2.06A3.25 3.25 0 0 0 18.84 1a3.22 3.22 0 0 0-2.29.95L13.5 5 11 2.5 9.59 3.91 12 6.33l-8 8.09a2 2 0 0 0-.58 1.41V20h4.17a2 2 0 0 0 1.42-.59l8.08-8L19.5 13.5l1.41-1.41L18.42 9.6l3.04-3.04a3.25 3.25 0 0 0-.29-4.5z"/>
+          </svg>
+        </button>
       </div>
 
       <div class="toolbar-sep"></div>
@@ -370,6 +505,7 @@ footer {
         <div class="color-chip" data-color="#f1c40f" style="background:#f1c40f" title="黄"></div>
         <div class="color-chip" data-color="#111111" style="background:#111;border:1px solid #555" title="黒"></div>
         <div class="color-chip" data-color="#ffffff" style="background:#fff;border:1px solid #999" title="白"></div>
+        <div class="color-chip" id="customColorChip" data-color="" style="background:transparent;border:1px solid #555;display:none" title="カスタム色"></div>
       </div>
 
       <div class="toolbar-sep"></div>
@@ -383,17 +519,18 @@ footer {
 
       <div class="toolbar-sep"></div>
 
-      <!-- Font size (visible only for text tool) -->
-      <div class="toolbar-group" id="fontSizeGroup" style="display:none">
-        <button class="size-btn" data-fontsize="16" title="小さい文字">小</button>
-        <button class="size-btn active" data-fontsize="24" title="中くらいの文字">中</button>
-        <button class="size-btn" data-fontsize="36" title="大きい文字">大</button>
-      </div>
-      <div class="toolbar-sep" id="fontSizeSep" style="display:none"></div>
-
-      <!-- Outline toggle -->
+      <!-- Outline / Fill toggles -->
       <div class="toolbar-group">
-        <button class="outline-toggle active" id="outlineToggle" title="テキスト縁取り切り替え">縁あり</button>
+        <button class="icon-toggle active" id="outlineToggle" title="縁取り切り替え">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <rect x="4" y="4" width="16" height="16" rx="2"/>
+          </svg>
+        </button>
+        <button class="icon-toggle" id="fillToggle" title="塗りつぶし切り替え">
+          <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1">
+            <rect x="4" y="4" width="16" height="16" rx="2"/>
+          </svg>
+        </button>
       </div>
 
       <div class="toolbar-sep"></div>
@@ -419,6 +556,13 @@ footer {
     </div>
 
     <!-- Canvas -->
+    <!-- Drop zone -->
+    <div class="drop-zone" id="dropZone">
+      <p>画像をドラッグ&ドロップ<br>またはクリックして選択</p>
+      <p class="hint">Ctrl+V でクリップボードからも貼り付けできます</p>
+      <input type="file" id="fileInput" accept="image/*" hidden>
+    </div>
+
     <div class="canvas-wrapper" id="canvasWrapper">
       <canvas id="baseCanvas"></canvas>
       <canvas id="overlayCanvas"></canvas>
@@ -429,6 +573,14 @@ footer {
 
     <!-- Actions -->
     <div class="actions">
+      <select id="outputSize" class="output-size-select">
+        <option value="original">元のサイズ</option>
+        <option value="1920x1080">1920x1080</option>
+        <option value="1280x720">1280x720</option>
+        <option value="640x360">640x360</option>
+        <option value="50%">50%</option>
+        <option value="25%">25%</option>
+      </select>
       <button class="btn btn-primary" id="saveBtn">PNG保存</button>
       <button class="btn btn-secondary" id="resetBtn">別の画像を読む</button>
     </div>
@@ -474,8 +626,8 @@ footer {
   var canvasWrapper = document.getElementById('canvasWrapper');
   var textInputEl = document.getElementById('textInput');
   var textField = document.getElementById('textField');
-  var fontSizeGroup = document.getElementById('fontSizeGroup');
-  var fontSizeSep = document.getElementById('fontSizeSep');
+  var mosaicPopup = document.getElementById('mosaicPopup');
+  var mosaicBtn = document.getElementById('mosaicBtn');
 
   var baseCtx = baseCanvas.getContext('2d');
   var overlayCtx = overlayCanvas.getContext('2d');
@@ -485,6 +637,7 @@ footer {
   var currentColor = '#e74c3c';
   var currentWidth = 4;
   var currentFontSize = 24;
+  var currentBlockSize = 16;
   var objects = [];       // array of drawing objects
   var isDrawing = false;
   var startX = 0, startY = 0;
@@ -503,6 +656,15 @@ footer {
 
   // Outline state
   var outlineEnabled = true;
+
+  // Fill state
+  var fillEnabled = false;
+
+  // Mosaic shape state
+  var currentMosaicShape = 'pen';
+
+  // Mosaic pen state
+  var mosaicPoints = [];
 
   // --- File loading ---
   dropZone.addEventListener('click', function() { fileInput.click(); });
@@ -547,6 +709,12 @@ footer {
         editorEl.classList.add('active');
         objects = [];
         selectedObject = null;
+        textInputEl.style.display = 'none';
+        currentTool = 'select';
+        document.querySelectorAll('.tool-btn[data-tool]').forEach(function(b) { b.classList.remove('active'); });
+        var selectBtn = document.querySelector('.tool-btn[data-tool="select"]');
+        if (selectBtn) selectBtn.classList.add('active');
+        updateCursor();
       };
       img.src = e.target.result;
     };
@@ -556,10 +724,24 @@ footer {
   function setupCanvas(img) {
     var w = img.naturalWidth;
     var h = img.naturalHeight;
+
+    // Limit display size to fit container
+    var maxW = canvasWrapper.parentElement.offsetWidth || 800;
+    var maxH = window.innerHeight * 0.7;
+    var scale = Math.min(1, maxW / w, maxH / h);
+    var displayW = Math.round(w * scale);
+    var displayH = Math.round(h * scale);
+
+    // Set canvas internal resolution to original image size
     baseCanvas.width = w;
     baseCanvas.height = h;
     overlayCanvas.width = w;
     overlayCanvas.height = h;
+
+    // Set wrapper to display size so both canvases match
+    canvasWrapper.style.width = displayW + 'px';
+    canvasWrapper.style.height = displayH + 'px';
+
     baseCtx.drawImage(img, 0, 0);
     overlayCtx.clearRect(0, 0, w, h);
   }
@@ -574,13 +756,31 @@ footer {
 
   // --- Tool selection ---
   document.querySelectorAll('.tool-btn[data-tool]').forEach(function(btn) {
-    btn.addEventListener('click', function() {
+    btn.addEventListener('click', function(e) {
+      var tool = btn.getAttribute('data-tool');
+
+      // Mosaic: show popup instead of directly activating
+      if (tool === 'mosaic') {
+        e.stopPropagation();
+        if (mosaicPopup.classList.contains('open')) {
+          mosaicPopup.classList.remove('open');
+          return;
+        }
+        // Position popup below the mosaic button
+        var btnRect = btn.getBoundingClientRect();
+        var toolbarRect = document.getElementById('toolbar').getBoundingClientRect();
+        mosaicPopup.style.left = (btnRect.left - toolbarRect.left) + 'px';
+        mosaicPopup.style.top = (btnRect.bottom - toolbarRect.top + 4) + 'px';
+        mosaicPopup.classList.add('open');
+        return;
+      }
+
+      // Close mosaic popup for other tools
+      mosaicPopup.classList.remove('open');
+
       document.querySelectorAll('.tool-btn[data-tool]').forEach(function(b) { b.classList.remove('active'); });
       btn.classList.add('active');
-      currentTool = btn.getAttribute('data-tool');
-      var isText = currentTool === 'text';
-      fontSizeGroup.style.display = isText ? 'flex' : 'none';
-      fontSizeSep.style.display = isText ? 'block' : 'none';
+      currentTool = tool;
       updateCursor();
       if (currentTool !== 'select') {
         deselectAll();
@@ -589,10 +789,48 @@ footer {
     });
   });
 
+  // --- Mosaic popup interactions ---
+  mosaicPopup.addEventListener('click', function(e) {
+    e.stopPropagation();
+    var target = e.target;
+    if (!target.classList.contains('mosaic-popup-btn')) return;
+
+    if (target.hasAttribute('data-blocksize')) {
+      // Coarseness selection
+      mosaicPopup.querySelectorAll('[data-blocksize]').forEach(function(b) { b.classList.remove('active'); });
+      target.classList.add('active');
+      currentBlockSize = parseInt(target.getAttribute('data-blocksize'));
+    }
+    if (target.hasAttribute('data-shape')) {
+      // Shape selection
+      mosaicPopup.querySelectorAll('[data-shape]').forEach(function(b) { b.classList.remove('active'); });
+      target.classList.add('active');
+      currentMosaicShape = target.getAttribute('data-shape');
+    }
+
+    // Always activate mosaic tool and close popup on any button click
+    mosaicPopup.classList.remove('open');
+    document.querySelectorAll('.tool-btn[data-tool]').forEach(function(b) { b.classList.remove('active'); });
+    mosaicBtn.classList.add('active');
+    currentTool = 'mosaic';
+    updateCursor();
+    deselectAll();
+    renderAll();
+  });
+
+  // Close popup when clicking outside
+  document.addEventListener('click', function(e) {
+    if (!mosaicPopup.contains(e.target) && e.target !== mosaicBtn && !mosaicBtn.contains(e.target)) {
+      mosaicPopup.classList.remove('open');
+    }
+  });
+
   function updateCursor() {
-    canvasWrapper.classList.remove('cursor-select', 'cursor-grab', 'cursor-grabbing');
+    canvasWrapper.classList.remove('cursor-select', 'cursor-grab', 'cursor-grabbing', 'cursor-eyedropper');
     if (currentTool === 'select') {
       canvasWrapper.classList.add('cursor-select');
+    } else if (currentTool === 'eyedropper') {
+      canvasWrapper.classList.add('cursor-eyedropper');
     }
   }
 
@@ -614,25 +852,29 @@ footer {
     });
   });
 
-  // Font size
-  document.querySelectorAll('.size-btn[data-fontsize]').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      document.querySelectorAll('.size-btn[data-fontsize]').forEach(function(b) { b.classList.remove('active'); });
-      btn.classList.add('active');
-      currentFontSize = parseInt(btn.getAttribute('data-fontsize'));
-    });
-  });
-
   // --- Outline toggle ---
   var outlineToggle = document.getElementById('outlineToggle');
-  outlineToggle.addEventListener('click', function() {
+  outlineToggle.addEventListener('click', function(e) {
+    e.stopPropagation();
     outlineEnabled = !outlineEnabled;
-    if (outlineEnabled) {
-      outlineToggle.textContent = '縁あり';
-      outlineToggle.classList.add('active');
-    } else {
-      outlineToggle.textContent = '縁なし';
-      outlineToggle.classList.remove('active');
+    outlineToggle.classList.toggle('active', outlineEnabled);
+    // Apply to selected object
+    if (selectedObject && (selectedObject.type === 'rect' || selectedObject.type === 'ellipse' || selectedObject.type === 'text')) {
+      selectedObject.outline = outlineEnabled;
+      renderAll();
+    }
+  });
+
+  // --- Fill toggle ---
+  var fillToggle = document.getElementById('fillToggle');
+  fillToggle.addEventListener('click', function(e) {
+    e.stopPropagation();
+    fillEnabled = !fillEnabled;
+    fillToggle.classList.toggle('active', fillEnabled);
+    // Apply to selected object
+    if (selectedObject && (selectedObject.type === 'rect' || selectedObject.type === 'ellipse')) {
+      selectedObject.filled = fillEnabled;
+      renderAll();
     }
   });
 
@@ -664,6 +906,26 @@ footer {
     deselectAll();
     obj.selected = true;
     selectedObject = obj;
+
+    // Sync toolbar toggles with the selected object's properties
+    if (obj.type === 'rect' || obj.type === 'ellipse') {
+      // Sync outline toggle
+      if (obj.outline === false) {
+        outlineEnabled = false;
+        outlineToggle.classList.remove('active');
+      } else {
+        outlineEnabled = true;
+        outlineToggle.classList.add('active');
+      }
+      // Sync fill toggle
+      if (obj.filled) {
+        fillEnabled = true;
+        fillToggle.classList.add('active');
+      } else {
+        fillEnabled = false;
+        fillToggle.classList.remove('active');
+      }
+    }
   }
 
   // --- Bounding box calculation ---
@@ -718,6 +980,28 @@ footer {
           h: fs * 1.3 + 8
         };
       }
+      case 'mosaic': {
+        if (obj.mosaicShape === 'pen' && obj.points && obj.points.length > 0) {
+          var mMinX = Infinity, mMinY = Infinity, mMaxX = -Infinity, mMaxY = -Infinity;
+          var mBw = obj.brushWidth || obj.blockSize * 3;
+          var mHalf = Math.floor(mBw / 2);
+          for (var mi = 0; mi < obj.points.length; mi++) {
+            if (obj.points[mi].x - mHalf < mMinX) mMinX = obj.points[mi].x - mHalf;
+            if (obj.points[mi].y - mHalf < mMinY) mMinY = obj.points[mi].y - mHalf;
+            if (obj.points[mi].x + mHalf > mMaxX) mMaxX = obj.points[mi].x + mHalf;
+            if (obj.points[mi].y + mHalf > mMaxY) mMaxY = obj.points[mi].y + mHalf;
+          }
+          return { x: mMinX - 2, y: mMinY - 2, w: (mMaxX - mMinX) + 4, h: (mMaxY - mMinY) + 4 };
+        }
+        var mx = Math.min(obj.x1, obj.x2);
+        var my = Math.min(obj.y1, obj.y2);
+        return {
+          x: mx - 2,
+          y: my - 2,
+          w: Math.abs(obj.x2 - obj.x1) + 4,
+          h: Math.abs(obj.y2 - obj.y1) + 4
+        };
+      }
       default:
         return { x: 0, y: 0, w: 0, h: 0 };
     }
@@ -731,7 +1015,8 @@ footer {
       case 'rect':
       case 'ellipse':
       case 'freehand':
-      case 'text': {
+      case 'text':
+      case 'mosaic': {
         var bb = getBoundingBox(obj);
         return px >= bb.x && px <= bb.x + bb.w && py >= bb.y && py <= bb.y + bb.h;
       }
@@ -764,6 +1049,7 @@ footer {
   // --- Resize handle hit test ---
   function hitResizeHandle(obj, px, py) {
     if (!obj || !obj.selected) return false;
+    if (obj.type === 'mosaic') return false;
     var bb = getBoundingBox(obj);
     var hx = bb.x + bb.w;
     var hy = bb.y + bb.h;
@@ -877,6 +1163,19 @@ footer {
         obj.x1 += dx;
         obj.y1 += dy;
         break;
+      case 'mosaic':
+        if (obj.mosaicShape === 'pen' && obj.points) {
+          for (var mi = 0; mi < obj.points.length; mi++) {
+            obj.points[mi].x += dx;
+            obj.points[mi].y += dy;
+          }
+        } else {
+          obj.x1 += dx;
+          obj.y1 += dy;
+          obj.x2 += dx;
+          obj.y2 += dy;
+        }
+        break;
     }
   }
 
@@ -907,12 +1206,34 @@ footer {
         drawArrow(overlayCtx, obj.x1, obj.y1, obj.x2, obj.y2, obj.lineWidth);
         break;
       case 'rect':
-        overlayCtx.beginPath();
-        overlayCtx.rect(obj.x1, obj.y1, obj.x2 - obj.x1, obj.y2 - obj.y1);
-        overlayCtx.stroke();
+        if (obj.filled && obj.outline !== false) {
+          // Fill + stroke
+          overlayCtx.fillStyle = obj.color;
+          overlayCtx.fillRect(obj.x1, obj.y1, obj.x2 - obj.x1, obj.y2 - obj.y1);
+          overlayCtx.beginPath();
+          overlayCtx.rect(obj.x1, obj.y1, obj.x2 - obj.x1, obj.y2 - obj.y1);
+          overlayCtx.stroke();
+        } else if (obj.filled && obj.outline === false) {
+          // Fill only (no stroke)
+          overlayCtx.fillStyle = obj.color;
+          overlayCtx.fillRect(obj.x1, obj.y1, obj.x2 - obj.x1, obj.y2 - obj.y1);
+        } else if (!obj.filled && obj.outline !== false) {
+          // Stroke only
+          overlayCtx.beginPath();
+          overlayCtx.rect(obj.x1, obj.y1, obj.x2 - obj.x1, obj.y2 - obj.y1);
+          overlayCtx.stroke();
+        }
+        // !filled && outline===false -> nothing drawn
         break;
       case 'ellipse':
-        drawEllipse(overlayCtx, obj.x1, obj.y1, obj.x2, obj.y2);
+        if (obj.filled && obj.outline !== false) {
+          drawEllipseFill(overlayCtx, obj.x1, obj.y1, obj.x2, obj.y2, obj.color);
+          drawEllipse(overlayCtx, obj.x1, obj.y1, obj.x2, obj.y2);
+        } else if (obj.filled && obj.outline === false) {
+          drawEllipseFill(overlayCtx, obj.x1, obj.y1, obj.x2, obj.y2, obj.color);
+        } else if (!obj.filled && obj.outline !== false) {
+          drawEllipse(overlayCtx, obj.x1, obj.y1, obj.x2, obj.y2);
+        }
         break;
       case 'freehand':
         drawFreehandFromPoints(overlayCtx, obj.points);
@@ -920,8 +1241,110 @@ footer {
       case 'text':
         drawTextObject(overlayCtx, obj);
         break;
+      case 'mosaic':
+        drawMosaic(obj);
+        break;
     }
     overlayCtx.restore();
+  }
+
+  function drawMosaic(obj) {
+    var shape = obj.mosaicShape || 'rect';
+    if (shape === 'pen') {
+      drawPenMosaic(obj);
+      return;
+    }
+    // rect shape
+    var x = Math.min(obj.x1, obj.x2);
+    var y = Math.min(obj.y1, obj.y2);
+    var w = Math.abs(obj.x2 - obj.x1);
+    var h = Math.abs(obj.y2 - obj.y1);
+    if (w < 1 || h < 1) return;
+    var bs = obj.blockSize;
+
+    var cx = Math.max(0, Math.round(x));
+    var cy = Math.max(0, Math.round(y));
+    var cw = Math.min(Math.round(w), baseCanvas.width - cx);
+    var ch = Math.min(Math.round(h), baseCanvas.height - cy);
+    if (cw < 1 || ch < 1) return;
+
+    var baseData = baseCtx.getImageData(cx, cy, cw, ch);
+
+    for (var by = 0; by < ch; by += bs) {
+      for (var bx = 0; bx < cw; bx += bs) {
+        var r = 0, g = 0, b = 0, count = 0;
+        for (var dy = 0; dy < bs && by + dy < ch; dy++) {
+          for (var dx = 0; dx < bs && bx + dx < cw; dx++) {
+            var idx = ((by + dy) * cw + (bx + dx)) * 4;
+            r += baseData.data[idx];
+            g += baseData.data[idx + 1];
+            b += baseData.data[idx + 2];
+            count++;
+          }
+        }
+        r = Math.round(r / count);
+        g = Math.round(g / count);
+        b = Math.round(b / count);
+
+        overlayCtx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
+        overlayCtx.fillRect(cx + bx, cy + by,
+          Math.min(bs, cw - bx), Math.min(bs, ch - by));
+      }
+    }
+  }
+
+  function drawPenMosaic(obj) {
+    var bs = obj.blockSize;
+    var bw = obj.brushWidth || bs * 3;
+    var half = Math.floor(bw / 2);
+    var canvasW = baseCanvas.width, canvasH = baseCanvas.height;
+
+    var processed = {};
+
+    // Interpolate between consecutive points to fill gaps
+    var allPoints = [];
+    if (obj.points && obj.points.length > 0) {
+      allPoints.push(obj.points[0]);
+      for (var pi = 1; pi < obj.points.length; pi++) {
+        var p0 = obj.points[pi - 1];
+        var p1 = obj.points[pi];
+        var dist = Math.sqrt((p1.x - p0.x) * (p1.x - p0.x) + (p1.y - p0.y) * (p1.y - p0.y));
+        var steps = Math.max(1, Math.ceil(dist / (bs * 0.5)));
+        for (var si = 1; si <= steps; si++) {
+          var t = si / steps;
+          allPoints.push({ x: p0.x + (p1.x - p0.x) * t, y: p0.y + (p1.y - p0.y) * t });
+        }
+      }
+    }
+
+    for (var i = 0; i < allPoints.length; i++) {
+      var pt = allPoints[i];
+      var startX = Math.max(0, Math.floor((pt.x - half) / bs) * bs);
+      var startY = Math.max(0, Math.floor((pt.y - half) / bs) * bs);
+      var endX = Math.min(canvasW, pt.x + half);
+      var endY = Math.min(canvasH, pt.y + half);
+
+      for (var by = startY; by < endY; by += bs) {
+        for (var bx = startX; bx < endX; bx += bs) {
+          var key = bx + ',' + by;
+          if (processed[key]) continue;
+          processed[key] = true;
+
+          var blockW = Math.min(bs, canvasW - bx);
+          var blockH = Math.min(bs, canvasH - by);
+          if (blockW < 1 || blockH < 1) continue;
+
+          var data = baseCtx.getImageData(bx, by, blockW, blockH).data;
+          var r = 0, g = 0, b = 0, count = 0;
+          for (var di = 0; di < data.length; di += 4) {
+            r += data[di]; g += data[di + 1]; b += data[di + 2]; count++;
+          }
+          r = Math.round(r / count); g = Math.round(g / count); b = Math.round(b / count);
+          overlayCtx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
+          overlayCtx.fillRect(bx, by, blockW, blockH);
+        }
+      }
+    }
   }
 
   function drawSelectionBox(obj) {
@@ -932,16 +1355,18 @@ footer {
     overlayCtx.setLineDash([6, 4]);
     overlayCtx.strokeRect(bb.x, bb.y, bb.w, bb.h);
 
-    // Resize handle at bottom-right corner
-    var handleSize = 8;
-    var hx = bb.x + bb.w - handleSize / 2;
-    var hy = bb.y + bb.h - handleSize / 2;
-    overlayCtx.setLineDash([]);
-    overlayCtx.fillStyle = '#fff';
-    overlayCtx.strokeStyle = '#3498db';
-    overlayCtx.lineWidth = 2;
-    overlayCtx.fillRect(hx, hy, handleSize, handleSize);
-    overlayCtx.strokeRect(hx, hy, handleSize, handleSize);
+    // Resize handle at bottom-right corner (skip for mosaic)
+    if (obj.type !== 'mosaic') {
+      var handleSize = 8;
+      var hx = bb.x + bb.w - handleSize / 2;
+      var hy = bb.y + bb.h - handleSize / 2;
+      overlayCtx.setLineDash([]);
+      overlayCtx.fillStyle = '#fff';
+      overlayCtx.strokeStyle = '#3498db';
+      overlayCtx.lineWidth = 2;
+      overlayCtx.fillRect(hx, hy, handleSize, handleSize);
+      overlayCtx.strokeRect(hx, hy, handleSize, handleSize);
+    }
 
     overlayCtx.restore();
   }
@@ -962,6 +1387,24 @@ footer {
     ctx.moveTo(x2, y2);
     ctx.lineTo(x2 - headLen * Math.cos(angle + Math.PI / 6), y2 - headLen * Math.sin(angle + Math.PI / 6));
     ctx.stroke();
+  }
+
+  function hexToRgba(hex, alpha) {
+    var r = parseInt(hex.slice(1, 3), 16);
+    var g = parseInt(hex.slice(3, 5), 16);
+    var b = parseInt(hex.slice(5, 7), 16);
+    return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+  }
+
+  function drawEllipseFill(ctx, x1, y1, x2, y2, fillColor) {
+    var cx = (x1 + x2) / 2;
+    var cy = (y1 + y2) / 2;
+    var rx = Math.abs(x2 - x1) / 2;
+    var ry = Math.abs(y2 - y1) / 2;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, Math.max(rx, 0.1), Math.max(ry, 0.1), 0, 0, Math.PI * 2);
+    ctx.fillStyle = fillColor;
+    ctx.fill();
   }
 
   function drawEllipse(ctx, x1, y1, x2, y2) {
@@ -1056,11 +1499,28 @@ footer {
       return;
     }
 
+    // --- Eyedropper tool ---
+    if (currentTool === 'eyedropper') {
+      pickColor(coords.x, coords.y);
+      return;
+    }
+
     // --- Text tool ---
     if (currentTool === 'text') {
       e.preventDefault && e.preventDefault();
       e.stopPropagation && e.stopPropagation();
       setTimeout(function() { showTextInput(e); }, 50);
+      return;
+    }
+
+    // --- Mosaic tool ---
+    if (currentTool === 'mosaic') {
+      isDrawing = true;
+      startX = coords.x;
+      startY = coords.y;
+      if (currentMosaicShape === 'pen') {
+        mosaicPoints = [{ x: coords.x, y: coords.y }];
+      }
       return;
     }
 
@@ -1075,6 +1535,83 @@ footer {
 
   function onPointerMove(e) {
     var coords = getCanvasCoords(e);
+
+    // --- Loupe for eyedropper ---
+    if (currentTool === 'eyedropper' && loadedImage && document.getElementById('annotateLoupe')) {
+      var _loupe = document.getElementById('annotateLoupe');
+      var _hexLabel = document.getElementById('loupeHexLabel');
+      _loupe.style.display = 'block';
+      if (_hexLabel) _hexLabel.style.display = 'block';
+      var _lCtx = _loupe.getContext('2d');
+      var _ls = 160, _zoom = 12;
+      var _ss = Math.ceil(_ls / _zoom);
+      if (_ss % 2 === 0) _ss++;
+
+      var _px = Math.floor(coords.x);
+      var _py = Math.floor(coords.y);
+      var _cw = baseCanvas.width, _ch = baseCanvas.height;
+      _px = Math.max(0, Math.min(_px, _cw - 1));
+      _py = Math.max(0, Math.min(_py, _ch - 1));
+
+      // Center loupe on cursor
+      _loupe.style.left = (e.clientX - _ls / 2) + 'px';
+      _loupe.style.top = (e.clientY - _ls / 2) + 'px';
+
+      // Position hex label below loupe (centered under cursor)
+      if (_hexLabel) {
+        _hexLabel.style.left = (e.clientX - 30) + 'px';
+        _hexLabel.style.top = (e.clientY + _ls / 2 + 4) + 'px';
+      }
+
+      var _tc = document.createElement('canvas');
+      _tc.width = _cw; _tc.height = _ch;
+      var _tCtx = _tc.getContext('2d');
+      _tCtx.drawImage(baseCanvas, 0, 0);
+      _tCtx.drawImage(overlayCanvas, 0, 0);
+
+      var _half = Math.floor(_ss / 2);
+      _lCtx.clearRect(0, 0, _ls, _ls);
+      var _cs = _ls / _ss;
+      var _centerPixel = null;
+      for (var _dy = -_half; _dy <= _half; _dy++) {
+        for (var _dx = -_half; _dx <= _half; _dx++) {
+          var _sx = Math.max(0, Math.min(_px + _dx, _cw - 1));
+          var _sy = Math.max(0, Math.min(_py + _dy, _ch - 1));
+          var _p = _tCtx.getImageData(_sx, _sy, 1, 1).data;
+          _lCtx.fillStyle = 'rgb(' + _p[0] + ',' + _p[1] + ',' + _p[2] + ')';
+          _lCtx.fillRect((_dx + _half) * _cs, (_dy + _half) * _cs, Math.ceil(_cs), Math.ceil(_cs));
+          if (_dx === 0 && _dy === 0) _centerPixel = _p;
+        }
+      }
+      // Center crosshair (thicker white lines)
+      var _ctr = _half * _cs;
+      var _m = _ctr + _cs / 2;
+      _lCtx.strokeStyle = 'rgba(255,255,255,0.9)';
+      _lCtx.lineWidth = 2;
+      _lCtx.beginPath();
+      _lCtx.moveTo(_m, 0); _lCtx.lineTo(_m, _ctr - 1);
+      _lCtx.moveTo(_m, _ctr + _cs + 1); _lCtx.lineTo(_m, _ls);
+      _lCtx.moveTo(0, _m); _lCtx.lineTo(_ctr - 1, _m);
+      _lCtx.moveTo(_ctr + _cs + 1, _m); _lCtx.lineTo(_ls, _m);
+      _lCtx.stroke();
+      // Center pixel border
+      _lCtx.strokeStyle = 'rgba(255,255,255,0.9)';
+      _lCtx.lineWidth = 2;
+      _lCtx.strokeRect(_ctr, _ctr, Math.ceil(_cs), Math.ceil(_cs));
+
+      // HEX label
+      if (_hexLabel && _centerPixel) {
+        var _hex = '#' +
+          ('0' + _centerPixel[0].toString(16)).slice(-2).toUpperCase() +
+          ('0' + _centerPixel[1].toString(16)).slice(-2).toUpperCase() +
+          ('0' + _centerPixel[2].toString(16)).slice(-2).toUpperCase();
+        _hexLabel.textContent = _hex;
+      }
+      return;
+    } else {
+      if (document.getElementById('annotateLoupe')) document.getElementById('annotateLoupe').style.display = 'none';
+      if (document.getElementById('loupeHexLabel')) document.getElementById('loupeHexLabel').style.display = 'none';
+    }
 
     // --- Select mode: dragging / resizing ---
     if (currentTool === 'select') {
@@ -1125,14 +1662,49 @@ footer {
     if (currentTool === 'arrow') {
       drawArrow(overlayCtx, startX, startY, coords.x, coords.y, sw);
     } else if (currentTool === 'rect') {
-      overlayCtx.beginPath();
-      overlayCtx.rect(startX, startY, coords.x - startX, coords.y - startY);
-      overlayCtx.stroke();
+      if (fillEnabled && outlineEnabled) {
+        overlayCtx.fillStyle = currentColor;
+        overlayCtx.fillRect(startX, startY, coords.x - startX, coords.y - startY);
+        overlayCtx.beginPath();
+        overlayCtx.rect(startX, startY, coords.x - startX, coords.y - startY);
+        overlayCtx.stroke();
+      } else if (fillEnabled && !outlineEnabled) {
+        overlayCtx.fillStyle = currentColor;
+        overlayCtx.fillRect(startX, startY, coords.x - startX, coords.y - startY);
+      } else if (!fillEnabled && outlineEnabled) {
+        overlayCtx.beginPath();
+        overlayCtx.rect(startX, startY, coords.x - startX, coords.y - startY);
+        overlayCtx.stroke();
+      }
     } else if (currentTool === 'ellipse') {
-      drawEllipse(overlayCtx, startX, startY, coords.x, coords.y);
+      if (fillEnabled && outlineEnabled) {
+        drawEllipseFill(overlayCtx, startX, startY, coords.x, coords.y, currentColor);
+        drawEllipse(overlayCtx, startX, startY, coords.x, coords.y);
+      } else if (fillEnabled && !outlineEnabled) {
+        drawEllipseFill(overlayCtx, startX, startY, coords.x, coords.y, currentColor);
+      } else if (!fillEnabled && outlineEnabled) {
+        drawEllipse(overlayCtx, startX, startY, coords.x, coords.y);
+      }
     } else if (currentTool === 'freehand') {
       freehandPoints.push({ x: coords.x, y: coords.y });
       drawFreehandFromPoints(overlayCtx, freehandPoints);
+    } else if (currentTool === 'mosaic') {
+      if (currentMosaicShape === 'pen') {
+        mosaicPoints.push({ x: coords.x, y: coords.y });
+        // Realtime pen mosaic preview
+        var bsMap = { 8: 24, 16: 48, 32: 96 };
+        var previewBw = bsMap[currentBlockSize] || currentBlockSize * 3;
+        var previewObj = { type: 'mosaic', mosaicShape: 'pen', points: mosaicPoints, blockSize: currentBlockSize, brushWidth: previewBw };
+        drawPenMosaic(previewObj);
+      } else {
+        // Draw preview rectangle outline
+        overlayCtx.save();
+        overlayCtx.strokeStyle = '#3498db';
+        overlayCtx.lineWidth = 2;
+        overlayCtx.setLineDash([6, 4]);
+        overlayCtx.strokeRect(startX, startY, coords.x - startX, coords.y - startY);
+        overlayCtx.restore();
+      }
     }
   }
 
@@ -1173,9 +1745,9 @@ footer {
     if (currentTool === 'arrow') {
       obj = { type: 'arrow', x1: startX, y1: startY, x2: coords.x, y2: coords.y, color: currentColor, lineWidth: sw, outline: outlineEnabled, selected: false };
     } else if (currentTool === 'rect') {
-      obj = { type: 'rect', x1: startX, y1: startY, x2: coords.x, y2: coords.y, color: currentColor, lineWidth: sw, outline: outlineEnabled, selected: false };
+      obj = { type: 'rect', x1: startX, y1: startY, x2: coords.x, y2: coords.y, color: currentColor, lineWidth: sw, outline: outlineEnabled, filled: fillEnabled, selected: false };
     } else if (currentTool === 'ellipse') {
-      obj = { type: 'ellipse', x1: startX, y1: startY, x2: coords.x, y2: coords.y, color: currentColor, lineWidth: sw, outline: outlineEnabled, selected: false };
+      obj = { type: 'ellipse', x1: startX, y1: startY, x2: coords.x, y2: coords.y, color: currentColor, lineWidth: sw, outline: outlineEnabled, filled: fillEnabled, selected: false };
     } else if (currentTool === 'freehand') {
       // Deep copy points
       var pts = [];
@@ -1183,19 +1755,95 @@ footer {
         pts.push({ x: freehandPoints[i].x, y: freehandPoints[i].y });
       }
       obj = { type: 'freehand', points: pts, color: currentColor, lineWidth: sw, outline: outlineEnabled, selected: false };
+    } else if (currentTool === 'mosaic') {
+      if (currentMosaicShape === 'pen') {
+        if (mosaicPoints.length > 1) {
+          var bsMap = { 8: 24, 16: 48, 32: 96 };
+          var penBw = bsMap[currentBlockSize] || currentBlockSize * 3;
+          var pts = [];
+          for (var pi = 0; pi < mosaicPoints.length; pi++) {
+            pts.push({ x: mosaicPoints[pi].x, y: mosaicPoints[pi].y });
+          }
+          obj = { type: 'mosaic', mosaicShape: 'pen', points: pts, blockSize: currentBlockSize, brushWidth: penBw, lineWidth: 0, selected: false };
+        }
+        mosaicPoints = [];
+      } else {
+        var mw = Math.abs(coords.x - startX);
+        var mh = Math.abs(coords.y - startY);
+        if (mw > 4 && mh > 4) {
+          obj = { type: 'mosaic', x1: startX, y1: startY, x2: coords.x, y2: coords.y, blockSize: currentBlockSize, mosaicShape: 'rect', lineWidth: 0, selected: false };
+        }
+      }
     }
 
     if (obj) {
       objects.push(obj);
+      // 描いた直後に自動選択
+      selectObject(obj);
+      currentTool = 'select';
+      document.querySelectorAll('.tool-btn[data-tool]').forEach(function(b) { b.classList.remove('active'); });
+      var selBtn = document.querySelector('.tool-btn[data-tool="select"]');
+      if (selBtn) selBtn.classList.add('active');
+      updateCursor();
       renderAll();
     }
+  }
+
+  // --- Eyedropper ---
+  var customColorChip = document.getElementById('customColorChip');
+
+  function pickColor(x, y) {
+    // Merge base and overlay to get the composite color
+    var tempCanvas = document.createElement('canvas');
+    tempCanvas.width = baseCanvas.width;
+    tempCanvas.height = baseCanvas.height;
+    var tempCtx = tempCanvas.getContext('2d');
+    tempCtx.drawImage(baseCanvas, 0, 0);
+    tempCtx.drawImage(overlayCanvas, 0, 0);
+
+    var px = Math.round(x);
+    var py = Math.round(y);
+    px = Math.max(0, Math.min(px, tempCanvas.width - 1));
+    py = Math.max(0, Math.min(py, tempCanvas.height - 1));
+
+    var pixel = tempCtx.getImageData(px, py, 1, 1).data;
+    var hex = '#' +
+      ('0' + pixel[0].toString(16)).slice(-2) +
+      ('0' + pixel[1].toString(16)).slice(-2) +
+      ('0' + pixel[2].toString(16)).slice(-2);
+
+    // Set as current color
+    currentColor = hex;
+
+    // Update color chips: deselect all, show and select custom chip
+    document.querySelectorAll('.color-chip').forEach(function(c) { c.classList.remove('active'); });
+    customColorChip.style.display = '';
+    customColorChip.style.background = hex;
+    customColorChip.setAttribute('data-color', hex);
+    customColorChip.title = 'カスタム色 (' + hex + ')';
+    customColorChip.classList.add('active');
+
+    // Hide loupe and hex label
+    if (document.getElementById('annotateLoupe')) {
+      document.getElementById('annotateLoupe').style.display = 'none';
+    }
+    if (document.getElementById('loupeHexLabel')) {
+      document.getElementById('loupeHexLabel').style.display = 'none';
+    }
+
+    // Switch back to select tool
+    document.querySelectorAll('.tool-btn[data-tool]').forEach(function(b) { b.classList.remove('active'); });
+    var selectBtn = document.querySelector('.tool-btn[data-tool="select"]');
+    if (selectBtn) selectBtn.classList.add('active');
+    currentTool = 'select';
+    updateCursor();
   }
 
   // --- Text tool ---
   function showTextInput(e) {
     var rect = overlayCanvas.getBoundingClientRect();
-    var displayX = e.clientX - rect.left;
-    var displayY = e.clientY - rect.top;
+    var displayX = Math.max(0, Math.min(e.clientX - rect.left, rect.width - 150));
+    var displayY = Math.max(0, Math.min(e.clientY - rect.top, rect.height - 30));
 
     textInputEl.style.display = 'block';
     textInputEl.style.left = displayX + 'px';
@@ -1306,9 +1954,42 @@ footer {
     mergeCtx.drawImage(baseCanvas, 0, 0);
     mergeCtx.drawImage(overlayCanvas, 0, 0);
 
+    // Output size conversion
+    var outputSize = document.getElementById('outputSize').value;
+    var outputCanvas = mergeCanvas;
+
+    if (outputSize !== 'original') {
+      var origW = mergeCanvas.width;
+      var origH = mergeCanvas.height;
+      var targetW, targetH;
+
+      if (outputSize.indexOf('%') !== -1) {
+        var pct = parseInt(outputSize) / 100;
+        targetW = Math.round(origW * pct);
+        targetH = Math.round(origH * pct);
+      } else {
+        var parts = outputSize.split('x');
+        var maxW = parseInt(parts[0]);
+        var maxH = parseInt(parts[1]);
+        var scaleW = maxW / origW;
+        var scaleH = maxH / origH;
+        var scale = Math.min(scaleW, scaleH);
+        targetW = Math.round(origW * scale);
+        targetH = Math.round(origH * scale);
+      }
+
+      if (targetW > 0 && targetH > 0) {
+        outputCanvas = document.createElement('canvas');
+        outputCanvas.width = targetW;
+        outputCanvas.height = targetH;
+        var outCtx = outputCanvas.getContext('2d');
+        outCtx.drawImage(mergeCanvas, 0, 0, targetW, targetH);
+      }
+    }
+
     var link = document.createElement('a');
     link.download = 'annotated_' + Date.now() + '.png';
-    link.href = mergeCanvas.toDataURL('image/png');
+    link.href = outputCanvas.toDataURL('image/png');
     link.click();
   });
 
@@ -1327,7 +2008,12 @@ footer {
   // Initialize cursor
   updateCursor();
 
+  // Initialize cursor
+  updateCursor();
+
 })();
 </script>
+<canvas id="annotateLoupe" width="160" height="160"></canvas>
+<div id="loupeHexLabel"></div>
 </body>
 </html>

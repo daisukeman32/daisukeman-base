@@ -174,6 +174,32 @@ h1 {
 
 .btn:hover { opacity: 0.8; }
 
+.eyedropper-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text-sub);
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.eyedropper-btn:hover {
+  color: var(--text);
+  border-color: var(--text-sub);
+}
+
+.eyedropper-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
 .btn-outline {
   background: transparent;
   border: 1px solid var(--border);
@@ -308,6 +334,7 @@ footer {
   h1 { font-size: 18px; }
 }
 </style>
+<!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "d24f1023bf20452ab2732d4e254a2cfd"}'></script><!-- End Cloudflare Web Analytics -->
 </head>
 <body>
 
@@ -324,6 +351,15 @@ footer {
     <div class="color-picker-wrap">
       <input type="color" id="colorPicker" value="#3a7bd5">
     </div>
+    <button class="eyedropper-btn" id="eyedropperBtn" title="画面から色を取得">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 22l1-1h3l9-9"/>
+        <path d="M3 21l9-9"/>
+        <path d="M15 6l3-3a2.12 2.12 0 0 1 3 3l-3 3"/>
+        <path d="M14.5 6.5l3 3"/>
+        <path d="M12 9l3 3"/>
+      </svg>
+    </button>
     <input type="text" class="hex-input" id="hexInput" value="#3A7BD5" maxlength="7" spellcheck="false">
     <button class="btn" id="randomBtn">Random</button>
   </div>
@@ -585,6 +621,21 @@ footer {
 
   const saved = localStorage.getItem('color-scheme-theme') || 'dark';
   applyTheme(saved);
+
+  // --- EyeDropper ---
+  const eyedropperBtn = document.getElementById('eyedropperBtn');
+  if ('EyeDropper' in window) {
+    eyedropperBtn.style.display = 'flex';
+    eyedropperBtn.addEventListener('click', async () => {
+      try {
+        const eyeDropper = new EyeDropper();
+        const result = await eyeDropper.open();
+        update(result.sRGBHex);
+      } catch (err) {
+        // User cancelled or error - do nothing
+      }
+    });
+  }
 
   // --- Init ---
   update(currentColor);
