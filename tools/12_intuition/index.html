@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intuition Oracle | ダイスケマンの秘密倉庫</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Noto+Sans+JP:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+
+:root{
+  --bg:#0a0a0f;
+  --surface:rgba(20,16,12,0.85);
+  --surface2:rgba(30,24,18,0.9);
+  --text:#d4c5a0;
+  --text2:#8b7355;
+  --accent:#c9a84c;
+  --accent-dim:rgba(201,168,76,0.3);
+  --border:#3d2e1e;
+  --border-light:rgba(201,168,76,0.15);
+  --glow:rgba(201,168,76,0.4);
+  --glow-strong:rgba(201,168,76,0.7);
+}
+
+body{
+  font-family:'Noto Sans JP',sans-serif;
+  background:var(--bg);color:var(--text);
+  min-height:100vh;display:flex;flex-direction:column;
+  background-image:
+    radial-gradient(ellipse at 20% 50%, rgba(61,46,30,0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(139,115,85,0.08) 0%, transparent 40%),
+    radial-gradient(ellipse at 50% 80%, rgba(61,46,30,0.1) 0%, transparent 50%),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(139,115,85,0.02) 2px,
+      rgba(139,115,85,0.02) 4px
+    );
+}
+
+.separator{
+  text-align:center;color:var(--accent);font-family:'Cinzel',serif;
+  font-size:14px;letter-spacing:8px;margin:24px 0;opacity:0.6;
+  user-select:none;
+}
+
+header{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:16px 24px;border-bottom:1px solid var(--border);
+}
+header a{
+  color:var(--text2);text-decoration:none;font-size:14px;transition:color .2s;
+  font-family:'Noto Sans JP',sans-serif;
+}
+header a:hover{color:var(--accent);}
+
+main{flex:1;display:flex;flex-direction:column;align-items:center;padding:32px 16px;}
+
+h1{
+  font-family:'Cinzel',serif;
+  font-size:clamp(22px,5vw,36px);font-weight:700;text-align:center;
+  margin-bottom:8px;
+  color:var(--accent);
+  text-shadow:0 0 30px rgba(201,168,76,0.3);
+  letter-spacing:3px;
+}
+.subtitle{
+  color:var(--text2);margin-bottom:32px;font-size:14px;text-align:center;
+  letter-spacing:2px;
+}
+
+.btn{
+  background:linear-gradient(135deg,var(--accent),#a08030);
+  color:#0a0a0f;border:none;padding:14px 48px;border-radius:4px;
+  font-size:16px;font-weight:700;cursor:pointer;
+  transition:transform .2s,box-shadow .2s;
+  font-family:'Cinzel','Noto Sans JP',serif;
+  text-transform:uppercase;text-align:center;
+  border:1px solid var(--accent);
+  display:inline-flex;align-items:center;justify-content:center;
+  text-decoration:none;
+}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 32px var(--glow);}
+
+.btn-secondary{
+  background:transparent;border:1px solid var(--accent);color:var(--accent);
+  padding:10px 24px;border-radius:4px;font-size:14px;cursor:pointer;
+  transition:all .2s;font-family:'Cinzel','Noto Sans JP',serif;
+  letter-spacing:1px;
+}
+.btn-secondary:hover{background:var(--accent);color:#0a0a0f;}
+
+/* Progress bar */
+.progress-wrap{
+  width:100%;max-width:400px;margin:0 auto 24px;
+}
+.progress-label{
+  text-align:center;color:var(--accent);font-family:'Cinzel',serif;
+  font-size:13px;letter-spacing:4px;margin-bottom:8px;
+}
+.progress-track{
+  width:100%;height:4px;background:var(--border);border-radius:2px;overflow:hidden;
+}
+.progress-fill{
+  height:100%;background:linear-gradient(90deg,var(--accent),#a08030);
+  border-radius:2px;transition:width 0.6s ease;
+}
+
+/* Stage title */
+.stage-title{
+  font-family:'Cinzel',serif;
+  font-size:clamp(16px,3.5vw,24px);font-weight:700;
+  text-align:center;color:var(--accent);
+  text-shadow:0 0 20px rgba(201,168,76,0.3);
+  letter-spacing:2px;margin-bottom:24px;
+}
+
+/* Image grid */
+.image-grid{
+  display:grid;grid-template-columns:repeat(5,1fr);gap:14px;
+  max-width:680px;width:100%;margin:0 auto;
+}
+.image-card{
+  position:relative;aspect-ratio:1;border-radius:6px;overflow:hidden;cursor:pointer;
+  border:2px solid var(--border);transition:all .4s ease;
+  background:var(--surface);
+}
+.image-card img{
+  width:100%;height:100%;object-fit:cover;transition:transform .4s ease;
+  display:block;
+}
+.image-card:hover{
+  border-color:var(--accent);
+  box-shadow:0 0 20px var(--glow),0 0 40px var(--accent-dim);
+}
+.image-card:hover img{transform:scale(1.08);}
+.image-card.selected{
+  border-color:var(--accent);
+  box-shadow:0 0 24px var(--glow-strong),0 0 60px var(--accent-dim);
+}
+.image-card .card-name{
+  position:absolute;bottom:0;left:0;right:0;
+  text-align:center;font-size:11px;color:var(--accent);
+  background:linear-gradient(transparent,rgba(10,10,15,0.9));
+  padding:16px 4px 6px;letter-spacing:1px;
+  font-family:'Noto Sans JP',sans-serif;
+}
+.image-card.fade-out-card{
+  opacity:0;transform:scale(0.9);pointer-events:none;
+}
+
+/* Fade transitions */
+.fade-out{animation:fadeOut .5s ease forwards;}
+.fade-in{animation:fadeIn .5s ease forwards;}
+@keyframes fadeOut{to{opacity:0;transform:translateY(-10px);}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+/* Result screen */
+.result-section{max-width:720px;width:100%;margin:0 auto;}
+
+.result-header{
+  text-align:center;margin:16px 0 8px;
+  font-family:'Cinzel',serif;
+  color:var(--accent);font-size:clamp(14px,3vw,20px);
+  letter-spacing:3px;
+  text-shadow:0 0 20px rgba(201,168,76,0.3);
+}
+
+.chosen-images{
+  display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin:20px 0;
+}
+.chosen-wrap{text-align:center;}
+.chosen-wrap img{
+  width:72px;height:72px;border-radius:6px;object-fit:cover;
+  border:1px solid var(--border);
+  box-shadow:0 2px 12px rgba(0,0,0,0.5);
+  display:block;
+}
+.chosen-wrap .chosen-label{
+  font-size:10px;color:var(--accent);margin-top:4px;letter-spacing:1px;
+}
+
+.type-name{
+  font-family:'Cinzel',serif;
+  font-size:clamp(24px,6vw,40px);font-weight:700;text-align:center;
+  margin:8px 0 4px;
+  color:var(--accent);
+  text-shadow:0 0 30px rgba(201,168,76,0.4);
+  letter-spacing:2px;
+}
+.type-subtitle{
+  font-family:'Cinzel',serif;
+  font-size:clamp(12px,2vw,16px);text-align:center;
+  color:var(--text2);letter-spacing:4px;margin-bottom:24px;
+}
+
+/* Bar chart */
+.bar-chart{margin:28px 0;}
+.bar-row{display:flex;align-items:center;margin:10px 0;gap:12px;}
+.bar-label{width:70px;font-size:13px;color:var(--text2);text-align:right;letter-spacing:1px;}
+.bar-track{flex:1;height:18px;background:var(--surface2);border-radius:3px;overflow:hidden;border:1px solid var(--border);}
+.bar-fill{
+  height:100%;border-radius:2px;transition:width 1.2s ease;
+  background:linear-gradient(90deg,var(--accent),#a08030);
+  box-shadow:0 0 8px var(--accent-dim);
+}
+.bar-value{width:36px;font-size:13px;color:var(--accent);font-weight:600;}
+
+/* Description */
+.desc-block{
+  background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  padding:28px 24px;margin:24px 0;
+  box-shadow:0 4px 24px rgba(0,0,0,0.4),inset 0 1px 0 rgba(201,168,76,0.1);
+  line-height:2;font-size:15px;
+}
+.desc-block .desc-heading{
+  font-family:'Cinzel',serif;font-size:14px;color:var(--accent);
+  letter-spacing:3px;margin-bottom:12px;text-align:center;
+}
+.desc-block p{margin-bottom:12px;}
+.desc-block p:last-child{margin-bottom:0;}
+
+.strength-block{
+  padding:12px 16px;margin:8px 0;
+  background:rgba(201,168,76,0.06);
+  border-left:3px solid var(--accent);
+  border-radius:0 4px 4px 0;
+  font-size:14px;line-height:1.8;
+}
+.strength-block .label{
+  font-size:12px;color:var(--accent);letter-spacing:2px;margin-bottom:4px;
+  font-family:'Cinzel',serif;
+}
+
+/* Oracle box */
+.oracle-box{
+  max-width:560px;margin:32px auto;text-align:center;
+  padding:28px 32px;
+  border:2px solid var(--accent);
+  outline:1px solid var(--accent);
+  outline-offset:4px;
+  border-radius:4px;
+  background:rgba(201,168,76,0.04);
+  box-shadow:0 0 40px rgba(201,168,76,0.1);
+}
+.oracle-box h3{
+  font-family:'Cinzel',serif;
+  font-size:18px;color:var(--accent);
+  letter-spacing:4px;margin-bottom:16px;
+  text-shadow:0 0 15px rgba(201,168,76,0.3);
+}
+.oracle-box p{
+  font-size:16px;line-height:2;color:var(--text);
+  font-weight:400;
+}
+
+.actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:24px 0;}
+
+footer{
+  text-align:center;padding:24px;font-size:12px;color:var(--text2);
+  border-top:1px solid var(--border);
+}
+
+.hidden{display:none!important;}
+
+@media(max-width:600px){
+  .image-grid{gap:8px;}
+  .image-card .card-name{font-size:9px;padding:12px 2px 4px;}
+  .chosen-wrap img{width:56px;height:56px;}
+  .desc-block{padding:20px 16px;}
+  .oracle-box{padding:20px 16px;margin:24px 12px;}
+}
+@media(max-width:380px){
+  .image-grid{grid-template-columns:repeat(5,1fr);gap:6px;}
+}
+</style>
+<!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "d24f1023bf20452ab2732d4e254a2cfd"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+<body>
+<header>
+  <a href="../">&larr; 秘密倉庫に戻る</a>
+</header>
+
+<main>
+  <!-- Start Screen -->
+  <div id="startScreen" style="text-align:center;width:100%;">
+    <h1>Intuition Oracle</h1>
+    <p class="subtitle">直感を信じて選んでください</p>
+    <div class="separator">---***---</div>
+    <button class="btn" id="startBtn">Begin</button>
+  </div>
+
+  <!-- Stage Screen -->
+  <div id="stageScreen" class="hidden">
+    <div class="progress-wrap">
+      <div class="progress-label" id="progressLabel">Stage 1 / 4</div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:25%"></div></div>
+    </div>
+    <div class="stage-title" id="stageTitle"></div>
+    <div class="image-grid" id="imageGrid"></div>
+  </div>
+
+  <!-- Result Screen -->
+  <div id="resultScreen" class="hidden">
+    <div class="result-header">── 星々が導く あなたの本質 ──</div>
+    <div class="separator">---***---</div>
+    <div class="result-section">
+      <div class="chosen-images" id="chosenImages"></div>
+      <div class="type-name" id="typeName"></div>
+      <div class="type-subtitle" id="typeSubtitle"></div>
+      <div class="bar-chart" id="barChart"></div>
+      <div class="desc-block" id="descBlock"></div>
+      <div id="oracleBox"></div>
+      <div class="actions">
+        <a id="shareBtn" class="btn" target="_blank" rel="noopener">Share on X</a>
+        <button class="btn-secondary" id="retryBtn">もう一度占う</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>この占いはエンターテインメントです。実際の判断は自分自身で行ってください。</footer>
+
+<script src="../oracle-sounds.js"></script>
+<script>
+// ------- Data -------
+
+const stages = [
+  {
+    title: 'あなたを導く元素を選べ',
+    items: [
+      {file:'s1_01.png', name:'炎',   scores:[5,1,2,3,2]},
+      {file:'s1_02.png', name:'水',   scores:[2,5,1,3,2]},
+      {file:'s1_03.png', name:'風',   scores:[1,2,5,1,4]},
+      {file:'s1_04.png', name:'大地', scores:[3,2,2,5,1]},
+      {file:'s1_05.png', name:'雷',   scores:[2,1,3,2,5]},
+      {file:'s1_06.png', name:'氷',   scores:[4,3,1,4,1]},
+      {file:'s1_07.png', name:'光',   scores:[1,4,3,1,4]},
+      {file:'s1_08.png', name:'闇',   scores:[3,1,4,2,3]},
+      {file:'s1_09.png', name:'霧',   scores:[2,3,2,4,2]},
+      {file:'s1_10.png', name:'虹',   scores:[1,2,4,1,5]}
+    ]
+  },
+  {
+    title: 'あなたの魂に宿る精霊を選べ',
+    items: [
+      {file:'s2_01.png', name:'狼',   scores:[4,2,3,4,1]},
+      {file:'s2_02.png', name:'鷹',   scores:[2,5,2,1,3]},
+      {file:'s2_03.png', name:'蛇',   scores:[1,3,5,1,3]},
+      {file:'s2_04.png', name:'鹿',   scores:[5,1,1,5,1]},
+      {file:'s2_05.png', name:'龍',   scores:[3,2,4,2,2]},
+      {file:'s2_06.png', name:'猫',   scores:[1,4,2,3,3]},
+      {file:'s2_07.png', name:'鯨',   scores:[2,1,3,2,5]},
+      {file:'s2_08.png', name:'蝶',   scores:[4,3,1,3,2]},
+      {file:'s2_09.png', name:'鳳凰', scores:[3,2,4,1,3]},
+      {file:'s2_10.png', name:'亀',   scores:[1,3,2,4,3]}
+    ]
+  },
+  {
+    title: '運命を示すしるしを選べ',
+    items: [
+      {file:'s3_01.png', name:'鍵',     scores:[3,3,2,2,3]},
+      {file:'s3_02.png', name:'鏡',     scores:[5,1,2,4,1]},
+      {file:'s3_03.png', name:'羽根',   scores:[1,5,1,2,4]},
+      {file:'s3_04.png', name:'種',     scores:[2,2,5,2,2]},
+      {file:'s3_05.png', name:'月',     scores:[2,1,3,5,2]},
+      {file:'s3_06.png', name:'太陽',   scores:[1,4,2,1,5]},
+      {file:'s3_07.png', name:'剣',     scores:[4,2,3,3,1]},
+      {file:'s3_08.png', name:'盾',     scores:[3,3,4,1,2]},
+      {file:'s3_09.png', name:'砂時計', scores:[2,4,1,4,2]},
+      {file:'s3_10.png', name:'王冠',   scores:[1,1,3,2,5]}
+    ]
+  },
+  {
+    title: 'あなたが向かう場所を選べ',
+    items: [
+      {file:'s4_01.png', name:'深い森',         scores:[4,1,3,3,2]},
+      {file:'s4_02.png', name:'海の底',         scores:[1,4,2,2,4]},
+      {file:'s4_03.png', name:'山頂',           scores:[2,2,5,1,3]},
+      {file:'s4_04.png', name:'砂漠のオアシス', scores:[5,2,1,4,1]},
+      {file:'s4_05.png', name:'星空',           scores:[3,3,3,2,2]},
+      {file:'s4_06.png', name:'洞窟の中',       scores:[1,5,2,3,2]},
+      {file:'s4_07.png', name:'花畑',           scores:[2,1,4,5,1]},
+      {file:'s4_08.png', name:'嵐の空',         scores:[3,2,2,1,5]},
+      {file:'s4_09.png', name:'凍った湖',       scores:[4,3,1,3,2]},
+      {file:'s4_10.png', name:'夕焼けの草原',   scores:[1,2,4,2,4]}
+    ]
+  }
+];
+
+const typeData = {
+  fire: {
+    typeName: '燃える魂の持ち主',
+    title: 'The Blazing Soul',
+    desc: '汝の魂には消えることのない炎が宿っている。周囲の者が躊躇するとき、汝は迷わず前に進む。その情熱は人を動かし、道を切りひらく力となる。しかし炎は制御を誤れば自らをも焼く。衝動のままに動くのではなく、心の奥底にある静かな声にも耳を傾けよ。汝の炎は破壊のためではなく、周囲を照らし温めるために存在する。灰の中からでも何度でも立ち上がる不屈の精神こそ、汝に与えられた最大の祝福である。炎は消えない。たとえ雨が降り注ごうとも、汝の内なる火種は決して絶えることがない。その熱量をもって世界に挑め。',
+    strength: '決断力と行動力に優れる。迷わず進める勇気がある。\n周囲を鼓舞し、停滞した状況を一変させる突破力を持つ。',
+    weakness: '衝動的になりやすく、周りが見えなくなることがある。\n燃え尽き症候群に陥りやすい。休息の大切さを忘れるな。',
+    guidance: [
+      '今日は炎を静めよ。静かに観察する日だ。',
+      '情熱を解き放て。今日こそ動く日だ。',
+      '汝の炎で誰かを照らせ。与えることで力を得る。',
+      '衝動を抑えよ。三度深呼吸してから動け。',
+      '燃え尽きる前に休め。炎にも薪が必要だ。'
+    ]
+  },
+  mind: {
+    typeName: '静かなる賢者',
+    title: 'The Silent Sage',
+    desc: '汝の瞳は水面のごとく澄み渡り、万物の本質を映し出す。他の者が感情に溺れるとき、汝は冷静に真実を見抜く。その知性は暗闇を照らす灯台であり、多くの者が汝の導きを求めて訪れるであろう。しかし知恵に溺れれば心が枯れる。論理だけでは人の心は動かせぬ。時には理屈を捨て、温かき言葉を紡ぐことを忘れるな。汝の知性と慈愛が合わさるとき、真の賢者となる。思考の迷宮に閉じこもるな。その叡智を外に向けて放て。世界は汝の洞察を必要としている。',
+    strength: '冷静な分析力と深い洞察力を持つ。本質を見抜く目がある。\n複雑な問題を論理的に解きほぐし、最善の道を見つけ出す。',
+    weakness: '考えすぎて行動が遅れることがある。頭でっかちになりがち。\n感情を軽視しすぎると、大切な人との距離が開く。',
+    guidance: [
+      '今日は書物を閉じよ。体を動かし、汗を流せ。',
+      '直感を信じろ。すべてを分析する必要はない。',
+      '汝の知恵を惜しみなく分け与えよ。独り占めは毒となる。',
+      '今日は誰かの話をただ聴け。助言は不要だ。',
+      '考えるな、感じろ。心が告げる答えに従え。'
+    ]
+  },
+  heart: {
+    typeName: '共鳴する心の器',
+    title: 'The Resonant Heart',
+    desc: '汝の心は広大な海のごとく、あらゆる感情を受け止める深さを持つ。他者の痛みを自分のことのように感じ、その涙に寄り添える稀有な魂である。汝の存在そのものが癒しであり、枯れた大地に降り注ぐ慈雨のごとし。しかしすべてを受け止めようとすれば、汝自身が溺れてしまう。他者の感情と己の感情の境界を見失うな。自らを満たすことなくして、他者を満たすことはできぬ。汝の繊細さは弱さではなく、この世界に与えられた最も美しい力である。その感性を芸術に、言葉に、行いに変えよ。',
+    strength: '豊かな感受性と共感力がある。人の心に自然と寄り添える。\n芸術的才能に恵まれ、美しいものを生み出す力を持つ。',
+    weakness: '他者の感情に引きずられやすい。自分を後回しにしがち。\n感情の波に飲まれると判断力が鈍る。境界線を意識せよ。',
+    guidance: [
+      '今日は自分を甘やかせ。好きなものを食し、好きな音を聴け。',
+      '汝の感性を形にせよ。絵を描け、言葉を綴れ。',
+      '他者の荷物を降ろせ。今日は自分だけを大切にする日だ。',
+      '美しいものに触れよ。汝の感性が研ぎ澄まされる。',
+      '涙を恐れるな。流した分だけ心は軽くなる。'
+    ]
+  },
+  action: {
+    typeName: '嵐を呼ぶ開拓者',
+    title: 'The Stormbreaker',
+    desc: '汝の足は立ち止まることを知らず、その手は常に未知を掴もうとする。他の者が地図を広げるとき、汝はすでに最初の一歩を踏み出している。その行動力は嵐のごとく周囲を巻き込み、停滞を打ち破る。しかし嵐はすべてを薙ぎ倒す。走る前に一瞬だけ立ち止まり、方角を確かめよ。間違った方向への全力疾走ほど虚しいものはない。汝の推進力に戦略が加わるとき、不可能という壁は消え去る。世界は汝の行動を待っている。しかし賢き行動を。力なき戦略は幻、戦略なき力は暴走と知れ。',
+    strength: '圧倒的な実行力と突破力がある。チャンスを逃さない瞬発力。\n困難な状況でも動じず、周囲を牽引するリーダーシップを持つ。',
+    weakness: '考える前に動いて失敗することがある。計画性に欠けがち。\n周囲のペースを無視して独走しやすい。協調を忘れるな。',
+    guidance: [
+      '今日は動くな。計画を練る日だ。地図を広げよ。',
+      '迷いを捨てよ。今日は全力で走れ。風になれ。',
+      '仲間の歩調に合わせよ。独りで行ける距離には限りがある。',
+      '小さな一歩でいい。完璧を待つな。今すぐ始めよ。',
+      '休息も行動のうちだ。明日の疾走のために今日は眠れ。'
+    ]
+  },
+  intuition: {
+    typeName: '星読みの預言者',
+    title: 'The Stargazer',
+    desc: '汝の魂は見えない糸で宇宙と繋がっている。理屈では説明できぬ「何か」を感じ取る力は、言葉を超えた真実を捉える。他の者が五感に頼るとき、汝は第六の感覚で世界を読み解く。夢の中の啓示、ふとした予感、説明のつかない確信。それらはすべて汝に与えられた天賦の才である。しかし直感に頼りすぎれば現実との接点を失う。星を読むためには地に足をつけていなければならぬ。汝の直感と論理が手を結ぶとき、真の預言者となる。見えない世界の声を聴きながら、見える世界をしっかり歩め。',
+    strength: '鋭い直感と霊感がある。言葉にならない真実を捉える力。\n危機を事前に察知し、正しい選択へと導かれる天性の感覚。',
+    weakness: '直感を過信して根拠なく動くことがある。地に足がつかなくなりがち。\n感覚が鋭すぎるゆえに疲弊しやすい。現実との接点を保て。',
+    guidance: [
+      '今日は瞑想せよ。静寂の中に星の声が聞こえる。',
+      '夢を記録せよ。今夜の夢に大切な啓示がある。',
+      '直感に従って道を選べ。迷ったら最初に浮かんだ方へ。',
+      '今日は論理で考えよ。直感を封じ、数字と事実に向き合え。',
+      '自然の中に身を置け。風の匂い、鳥の声に耳を澄ませ。'
+    ]
+  }
+};
+
+const axisLabels = {fire:'情熱',mind:'知性',heart:'感性',action:'行動力',intuition:'直感力'};
+const axisKeys = ['fire','mind','heart','action','intuition'];
+
+// ------- State -------
+let currentStage = 0;
+let selections = [];
+
+const startScreen = document.getElementById('startScreen');
+const stageScreen = document.getElementById('stageScreen');
+const resultScreen = document.getElementById('resultScreen');
+
+// ------- Start -------
+document.getElementById('startBtn').onclick = () => {
+  currentStage = 0;
+  selections = [];
+  startScreen.classList.add('hidden');
+  stageScreen.classList.remove('hidden');
+  resultScreen.classList.add('hidden');
+  OracleSound.transition();
+  renderStage();
+};
+
+// ------- Stage rendering -------
+function renderStage() {
+  const stage = stages[currentStage];
+
+  // Progress
+  document.getElementById('progressLabel').textContent = `Stage ${currentStage + 1} / 4`;
+  document.getElementById('progressFill').style.width = ((currentStage + 1) / 4 * 100) + '%';
+
+  // Title
+  document.getElementById('stageTitle').textContent = stage.title;
+
+  // Grid
+  const grid = document.getElementById('imageGrid');
+  grid.innerHTML = '';
+  grid.classList.remove('fade-out');
+  grid.classList.add('fade-in');
+
+  stage.items.forEach((item, i) => {
+    const card = document.createElement('div');
+    card.className = 'image-card';
+    card.innerHTML = `<img src="img/${item.file}" alt="${item.name}"><span class="card-name">${item.name}</span>`;
+    card.onclick = () => selectImage(i);
+    grid.appendChild(card);
+  });
+}
+
+// ------- Selection -------
+function selectImage(idx) {
+  const cards = document.querySelectorAll('.image-card');
+  cards[idx].classList.add('selected');
+  cards.forEach(c => { c.style.pointerEvents = 'none'; });
+  OracleSound.select();
+
+  selections.push({
+    stage: currentStage,
+    index: idx,
+    item: stages[currentStage].items[idx]
+  });
+
+  setTimeout(() => {
+    // Fade out non-selected cards
+    cards.forEach((c, i) => {
+      if (i !== idx) c.classList.add('fade-out-card');
+    });
+
+    setTimeout(() => {
+      const grid = document.getElementById('imageGrid');
+      grid.classList.remove('fade-in');
+      grid.classList.add('fade-out');
+      OracleSound.transition();
+
+      setTimeout(() => {
+        currentStage++;
+        if (currentStage < 4) {
+          renderStage();
+        } else {
+          OracleSound.reveal();
+          showResult();
+        }
+      }, 500);
+    }, 400);
+  }, 600);
+}
+
+// ------- Result -------
+function showResult() {
+  stageScreen.classList.add('hidden');
+  resultScreen.classList.remove('hidden');
+
+  // Calculate scores
+  const totals = {fire:0, mind:0, heart:0, action:0, intuition:0};
+  selections.forEach(s => {
+    axisKeys.forEach((k, i) => { totals[k] += s.item.scores[i]; });
+  });
+
+  // Find dominant type
+  let maxKey = 'fire', maxVal = 0;
+  axisKeys.forEach(k => {
+    if (totals[k] > maxVal) { maxVal = totals[k]; maxKey = k; }
+  });
+
+  const td = typeData[maxKey];
+
+  // Chosen images
+  const ci = document.getElementById('chosenImages');
+  ci.innerHTML = '';
+  selections.forEach(s => {
+    const wrap = document.createElement('div');
+    wrap.className = 'chosen-wrap';
+    wrap.innerHTML = `<img src="img/${s.item.file}" alt="${s.item.name}"><span class="chosen-label">${s.item.name}</span>`;
+    ci.appendChild(wrap);
+  });
+
+  // Type name
+  document.getElementById('typeName').textContent = td.typeName;
+  document.getElementById('typeSubtitle').textContent = td.title;
+
+  // Bar chart
+  const bc = document.getElementById('barChart');
+  bc.innerHTML = '';
+  const maxPossible = 20;
+  axisKeys.forEach(k => {
+    const pct = Math.round((totals[k] / maxPossible) * 100);
+    const row = document.createElement('div');
+    row.className = 'bar-row';
+    row.innerHTML = `
+      <span class="bar-label">${axisLabels[k]}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:0%"></div></div>
+      <span class="bar-value">${totals[k]}</span>
+    `;
+    bc.appendChild(row);
+    setTimeout(() => { row.querySelector('.bar-fill').style.width = pct + '%'; }, 100);
+  });
+
+  // Description block
+  const db = document.getElementById('descBlock');
+  const descSentences = td.desc.split('。').filter(s => s.trim());
+  const descHtml = descSentences.map(s => `<p>${s}。</p>`).join('');
+  db.innerHTML = `
+    <div class="desc-heading">** READING **</div>
+    ${descHtml}
+    <div class="separator">---***---</div>
+    <div class="strength-block">
+      <div class="label">** STRENGTH **</div>
+      ${td.strength.replace(/\n/g, '<br>')}
+    </div>
+    <div class="strength-block">
+      <div class="label">** CAUTION **</div>
+      ${td.weakness.replace(/\n/g, '<br>')}
+    </div>
+  `;
+
+  // Oracle box (date-seeded guidance)
+  const today = new Date();
+  const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+  const guidanceIdx = (seed + maxVal * 3) % td.guidance.length;
+  const oracleBox = document.getElementById('oracleBox');
+  oracleBox.innerHTML = `
+    <div class="oracle-box">
+      <h3>** 今日の導き **</h3>
+      <p>${td.guidance[guidanceIdx]}</p>
+    </div>
+  `;
+
+  // Share
+  const text = encodeURIComponent(`直感占いの結果は「${td.typeName}」でした。#IntuitionOracle ダイスケマンの秘密倉庫で占ってみて`);
+  const url = encodeURIComponent(location.href);
+  document.getElementById('shareBtn').href = `https://x.com/intent/tweet?text=${text}&url=${url}`;
+
+  // Scroll
+  resultScreen.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+// ------- Retry -------
+document.getElementById('retryBtn').onclick = () => {
+  resultScreen.classList.add('hidden');
+  startScreen.classList.remove('hidden');
+};
+</script>
+</body>
+</html>
